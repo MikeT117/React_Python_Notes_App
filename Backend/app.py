@@ -1,7 +1,7 @@
 import os
 from flask import Flask, request, json, jsonify, Response, make_response
 from flask_jwt_extended import (JWTManager, jwt_refresh_token_required,jwt_required, create_access_token, get_jwt_identity, create_refresh_token)
-from app_helpers import DBQuery, hashPw, verifyPw, resp, allowedFile
+from app_helpers import DBQuery, hashPw, verifyPw, resp, allowedFile, is_json
 from flask_cors import CORS
 import hashlib, uuid
 import datetime
@@ -19,13 +19,12 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 jwt = JWTManager(app)
 CORS(app)
 
+
 @app.route('/register', methods=['POST'])
+
+# Checks request is valid JSON
+@is_json
 def register():
-
-    # Checks request is valid JSON
-    if not request.is_json:
-        return resp(code=400, msg="Missing JSON request!")
-
     username, password, firstname, lastname, email = request.json.get('userName', None), request.json.get('password', None), request.json.get('firstName', None), request.json.get('lastName', None), request.json.get('email', None)
 
     # Checks for null fields
@@ -47,19 +46,18 @@ def register():
     password_hash = hashPw(password)
 
     # Inserts new users details into the DB.
-    if DBQuery(modify = f"""insert into accounts (id,username,firstname,lastname,email,password, datetimeRegistration) VALUES ("{userID}","{username}","{firstname}","{lastname}","{email}", "{password_hash}", CURRENT_TIMESTAMP())""") != True:
+    if DBQuery(modify = f"""insert into accounts (id,username,firstname,lastname,email,password, timeStampRegistration) VALUES ("{userID}","{username}","{firstname}","{lastname}","{email}", "{password_hash}", CURRENT_TIMESTAMP())""") != True:
         return resp(code=400,msg="Issue during registration! Please try again later.")
 
     # Returns a success message to the frontend
     return resp(code=200, msg="Registration successful.")
 
+
 @app.route('/login', methods=['POST'])
+
+# Checks request is valid JSON
+@is_json
 def getToken():
-    
-    # Checks request is valid JSON
-    if not request.is_json:
-        return resp(code=400, msg="JSON Request Required!")
-    
     username_email, password = request.json.get('userEmail'), request.json.get('pw')
 
     # Checks username/email and password are not null/none
@@ -94,13 +92,56 @@ def getToken():
     # If the username cannot be found or the password is incorrect the login will fail an return a failure message        
     return resp(code=400, msg="Incorrect username and/or password!")
 
-@app.route('/get_todos', methods=['POST'])
-@jwt_refresh_token_required
-def get_todos():
+
+@app.route('/retrieveAccountData', methods=['POST'])
+# Checks that the request includes a valid access(JWT) token
+@jwt_required
+def retrieveAccountData():
+
+    # Get identity(username) from the access(JWT) token
     current_user = get_jwt_identity()
-    data = DBQuery(select = f"select datetimeEntered, datetimeForReminder, datetimeModified, id, remindMe, todoContent, todoTitle from todos where accountID=(select id from accounts where username='{current_user}')", allRows=True)
+    
+    # Retrieve user info from DB
+    accountInfo = DBQuery(select = f"select username,avatar, datetimeLastLogin, datetimeRegistration, email, firstname, lastname from accounts where username='{current_user}'", oneRow = True)
+    
+    # Checks account info is not null/none suggesting a failure to retrieve from the DB
+    if accountInfo != False:
+
+        # Returns account info
+        return resp(data=accountInfo, code=200)
+
+    # If account info retrieval fails for any reason 
+    return resp(code=400, msg="Error occured, Please try again later!")
+
+
+@app.route('/retrieveAllNotes', methods=['POST'])
+# Confirms request contains valid refresh token(This token has a lower ttl than a standard access token)
+@jwt_refresh_token_required
+def retrieveAllNotes():
+
+    # Get identity(username) from the access(JWT) token
+    current_user = get_jwt_identity()
+
+    # Retrieve all notes associated with the user
+    data = DBQuery(select = f"select id, title, body, timeStampEntered, timeStampModified, from notes where user=(select id from users where username='{current_user}')", allRows=True)
+
+    # Checks notes where successfully retrieved
     if data != False:
+
+        # Returns users notes to frontend
         return resp(data=data, code=200, msg="query successful")
+
+    # Returns error message if notes where not retrieved
+    return resp(code=400, msg="Error retrieving notes, Please try again later.")
+
+
+@app.route('/addNote', methods=['POST'])
+@jwt_refresh_token_required
+def addNote():
+    current_user = get_jwt_identity()
+
+
+
 
 @app.route('/updateTodo', methods=['POST'])
 @jwt_refresh_token_required
@@ -133,15 +174,6 @@ def save_todo():
     if DBQuery(modify = f"INSERT INTO todos (todoContent, datetimeEntered, datetimeModified, remindMe, datetimeForReminder, todoTitle, accountID) VALUES ('{request.json.get('todoContent')}',CURRENT_timestamp(),CURRENT_timestamp(),{0},CURRENT_timestamp(),'{request.json.get('todoTitle')}','{request.json.get('accountID')}')") == False:
         return resp(code=500, msg="error adding todo")
     return resp(code=200, msg="todo added")
-
-@app.route('/getAccountData', methods=['POST'])
-@jwt_required
-def getAccountData():
-    current_user = get_jwt_identity()
-    acc = DBQuery(select = f"select username,avatar, datetimeLastLogin, datetimeRegistration, email, firstname, lastname from accounts where username='{current_user}'", oneRow = True)
-    if acc != False:
-        return resp(data=acc, code=200)
-    return resp(code=400, msg="Error occured, Please try again later!")
 
 ##@app.route('/updateAccountData', methods=['POST'])
 @app.route('/updateAvatar', methods=['POST'])
