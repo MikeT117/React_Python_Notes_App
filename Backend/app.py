@@ -6,7 +6,7 @@ from flask_cors import CORS
 import hashlib, uuid
 import datetime
 from werkzeug.utils import secure_filename
-import app_config
+from app_config import secret_key
 
 UPLOAD_FOLDER = 'F:\Projects\Projects\CS50\cs50_project_2019\Backend\static\profileImages'
 ALLOWED_EXTENSION = set(['jpg','jpeg','png','gif'])
@@ -46,7 +46,7 @@ def register():
     password_hash = hashPw(password)
 
     # Inserts new users details into the DB.
-    if DBQuery(modify = f"""insert into accounts (id,username,firstname,lastname,email,password, timeStampRegistration) VALUES ("{userID}","{username}","{firstname}","{lastname}","{email}", "{password_hash}", CURRENT_TIMESTAMP())""") != True:
+    if DBQuery(modify = f"""insert into users (id,username,firstname,lastname,email,password, timeStampRegistration) VALUES ("{userID}","{username}","{firstname}","{lastname}","{email}", "{password_hash}", CURRENT_TIMESTAMP())""") != True:
         return resp(code=400,msg="Issue during registration! Please try again later.")
 
     # Returns a success message to the frontend
@@ -65,7 +65,7 @@ def getToken():
         return resp(code=400, msg="Username/Email or Password not provided!")
     
     # Retrieves the user from the DB if the user exists
-    userFromDB = DBQuery(select = f"select username, avatar, password from accounts where username='{username_email}' or email='{username_email}'", oneRow = True)
+    userFromDB = DBQuery(select = f"select username, avatar, password from users where username='{username_email}' or email='{username_email}'", oneRow = True)
     
     # Checks user is not null/none
     if userFromDB:
@@ -78,7 +78,7 @@ def getToken():
             access_token = create_access_token(identity=userFromDB['username'])
 
             # Stores the latest access and refresh token generated for the user in the DB with a datetime stamp and a session start timestamp
-            data = DBQuery(modify = f"Update accounts set access_token='{access_token}', refresh_token='{refresh_token}', datetimeLastLogin=CURRENT_TIMESTAMP(), sessionStart=CURRENT_TIMESTAMP() where username='{userFromDB['username']}'")
+            data = DBQuery(modify = f"Update users set access_token='{access_token}', refresh_token='{refresh_token}', datetimeLastLogin=CURRENT_TIMESTAMP(), sessionStart=CURRENT_TIMESTAMP() where username='{userFromDB['username']}'")
             
             # Confirms the above ran without error
             if data != False:
@@ -102,7 +102,7 @@ def retrieveAccountData():
     current_user = get_jwt_identity()
     
     # Retrieve user info from DB
-    accountInfo = DBQuery(select = f"select username,avatar, datetimeLastLogin, datetimeRegistration, email, firstname, lastname from accounts where username='{current_user}'", oneRow = True)
+    accountInfo = DBQuery(select = f"select username,avatar, datetimeLastLogin, datetimeRegistration, email, firstname, lastname from users where username='{current_user}'", oneRow = True)
     
     # Checks account info is not null/none suggesting a failure to retrieve from the DB
     if accountInfo != False:
@@ -136,44 +136,66 @@ def retrieveAllNotes():
 
 
 @app.route('/addNote', methods=['POST'])
+# Checks for a valid refresh token
 @jwt_refresh_token_required
+# Checks request is valid JSON
+@is_json
 def addNote():
+
+    # Gets user's identity (username)
     current_user = get_jwt_identity()
+    title = request.json.get('title')
+    body = request.json.get('body')
 
-
-
-
-@app.route('/updateTodo', methods=['POST'])
+    # Checks title is not null/none or an empty string
+    if title == None or title == "":
+        return resp(code=400, msg="No title, Please add a title to your note.")
+    
+    # Adds not to DB, If for any reason the note is not saved an error message will be returned
+    if DBQuery(modify= f"insert into notes (title, body, timeStampEntered, timeStampModified) values ({title}, {body}, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP())") == False:
+        return resp(code=400, msg="Error saving note, Please try again later.")
+    
+    # Return success if not saved
+    return resp(code=200, msg="Note saved.")
+    
+    
+@app.route('/updateNote', methods=['POST'])
+# Checks for a valid refresh token
 @jwt_refresh_token_required
+# Checks request is valid JSON
+@is_json
 def save_todos():
-    curr_user = get_jwt_identity()
-    todoID = request.json.get('id')
-    todoContent = request.json.get('content')
-    todoTitle = request.json.get('title')
-    reminderDateTime = request.json.get('datetimeForReminder')
-    reminder = request.json.get('reminde')
-    if todoID and reminder:
-        if DBQuery(modify = f"update todos set datetimeForReminder={reminderDateTime}, datetimeModified=CURRENT_TIMESTAMP(), remindMe={reminder}, todoContent='{todoContent}', todoTitle='{todoTitle}' where id='{todoID}'") != False:
-            return resp(code=200, msg="updates saved")
-    elif todoID:
-        if DBQuery(modify = f"update todos set datetimeModified=CURRENT_TIMESTAMP(), remindMe=0, todoContent='{todoContent}', todoTitle='{todoTitle}' where id='{todoID}'") != False:
-            return resp(code=200, msg="updates saved")
-    else:
-        return resp(code=500, msg="error saving update")
+    current_user = get_jwt_identity()
+    noteId = request.json.get('id')
+    body = request.json.get('content')
+    title = request.json.get('title')
 
-@app.route('/saveTodo', methods=['POST'])
+    # Checks noteId is not null/none, Updates the entry in the DB
+    if noteId and DBQuery(modify = f"update notes set timeStampModified=CURRENT_TIMESTAMP(), body='{body}', title='{title}' where id='{noteId}'") != False:
+        return resp(code=200, msg="updates saved")
+    
+    # Returns an error if noteID is null/None or an error is encountered during the DB query
+    return resp(code=500, msg="error saving update")
+
+
+@app.route('/deleteNote', methods=['POST'])
+# Checks for a valid refresh token
 @jwt_refresh_token_required
-def save_todo():
-    todoContent = request.json.get('content');
-    datetimeModified = request.json.get('datetimeModified');
-    remindMe = request.json.get('remindMe');
-    datetimeForReminder = request.json.get('datetimeForReminder');
-    todoTitle = request.json.get('todoTitle');
-    accountID = request.json.get('accountID');
+# Checks request is valid JSON
+@is_json
+def deleteNote():
+    current_user = get_jwt_identity()
+    noteId = request.json.get('id')
 
-    if DBQuery(modify = f"INSERT INTO todos (todoContent, datetimeEntered, datetimeModified, remindMe, datetimeForReminder, todoTitle, accountID) VALUES ('{request.json.get('todoContent')}',CURRENT_timestamp(),CURRENT_timestamp(),{0},CURRENT_timestamp(),'{request.json.get('todoTitle')}','{request.json.get('accountID')}')") == False:
-        return resp(code=500, msg="error adding todo")
-    return resp(code=200, msg="todo added")
+    # Checks noteId is not null/none then proceeds to delete the requested note
+    if noteId and DBQuery(modify=f"delete from notes where id={noteId} and user=(select id from users where username={current_user})") != False:
+
+        # Upon successful deletion a response will be resturned to the frontend stating such
+        return resp(code=200, msg="Note successfully deleted!")
+
+    # If noteId is null/none or the DB query fails an error message will be returned to the frontend
+    return resp(code=400, msg="Error while deleting note, Please try again later.")
+
 
 ##@app.route('/updateAccountData', methods=['POST'])
 @app.route('/updateAvatar', methods=['POST'])
