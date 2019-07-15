@@ -5,26 +5,28 @@ import os, hashlib, binascii
 
 
 # Function to query DB
-def DBQuery(modify = None, select = None, allRows = False, oneRow = False):
-  conn = pymysql.connect(host='sql.internal.razor116.com', user='michael',passwd='sqlpassword', db='noteapp', cursorclass=pymysql.cursors.DictCursor)
+def queryDB(oneRow=False, allRows=False, modify=False, query=None, queryTerms=None):
+  conn = pymysql.connect(host='sql.internal.razor116.com', user='michael',passwd='sqlpassword', db='noteapp', cursorclass=pymysql.cursors.DictCursor)  
+  if queryTerms == None or query == None:
+    return False
   try:
     with conn.cursor() as cursor:
-      if modify:
-        cursor.execute(modify)
+      cursor.execute(query, queryTerms)
+      # Debugging #
+      print(cursor._last_executed)
+      # Debugging #
+      if allRows:
+        return cursor.fetchall()
+      elif oneRow:
+        return cursor.fetchone()
+      elif modify:
         conn.commit()
-      if select:
-        cursor.execute(select)
-        if allRows:
-          return cursor.fetchall()
-        if oneRow:
-          return cursor.fetchone()
-      else:
         return True
   except pymysql.Error as e:
     print(f"Error {e.args[0]} - {e.args[1]}")
     cursor.close()
     return False
-
+  return False
 
 # Hashes the PW with a randomly generated salt
 def hashPw(pw, salt = hashlib.sha512(os.urandom(60)).hexdigest().encode('ascii')):
@@ -56,7 +58,7 @@ def resp(data = {}, code = 200, msg = ""):
 def is_json(f):
   @wraps(f)
   def wrapper(*args, **kwargs):
-    if request.is_json:
+    if not request.is_json:
       return make_response(json.dumps({}), f"400 Invalid JSON request!")
     return f(*args, **kwargs)
   return wrapper

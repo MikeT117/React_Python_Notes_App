@@ -1,7 +1,7 @@
 import os
 from flask import Flask, request, json, jsonify, Response, make_response
 from flask_jwt_extended import (JWTManager, jwt_refresh_token_required,jwt_required, create_access_token, get_jwt_identity, create_refresh_token)
-from app_helpers import DBQuery, hashPw, verifyPw, resp, allowedFile, is_json
+from app_helpers import queryDB, hashPw, verifyPw, resp, allowedFile, is_json
 from flask_cors import CORS
 import hashlib, uuid
 import datetime
@@ -36,17 +36,17 @@ def register():
         return resp(code=400, msg="Malformed register request!")
 
     # Checks if a user already exists with the provided username or email
-    if DBQuery(select = f"select * from accounts where username='{username}' or email='{email}'", oneRow = True):
+    if queryDB(query="select * from accounts where username=%s or email=%s", oneRow = True, queryTerms=(username, username)):
         return resp(code=400, msg="Username or email in use!")
 
     # Generates a unique userID
     userID = uuid.uuid4()
 
     # Hashes the users password.
-    password_hash = hashPw(password)
+    passwordHash = hashPw(password)
 
     # Inserts new users details into the DB.
-    if DBQuery(modify = f"""insert into users (id,username,firstname,lastname,email,password, timeStampRegistration) VALUES ("{userID}","{username}","{firstname}","{lastname}","{email}", "{password_hash}", CURRENT_TIMESTAMP())""") != True:
+    if queryDB(modify=True, query="insert into users (id,username,firstname,lastname,email,password, timeStampRegistration) VALUES (%s,%s,%s,%s,%s,%s, CURRENT_TIMESTAMP())", queryTerms=(userID, username, firstname, lastname, email, passwordHash)) != True:
         return resp(code=400,msg="Issue during registration! Please try again later.")
 
     # Returns a success message to the frontend
@@ -58,15 +58,14 @@ def register():
 # Checks request is valid JSON
 @is_json
 def getToken():
-    username_email, password = request.json.get('userEmail'), request.json.get('pw')
+    username_email, password = request.json.get('usernameEmail'), request.json.get('password')
 
     # Checks username/email and password are not null/none
     if not username_email or not password:
         return resp(code=400, msg="Username/Email or Password not provided!")
     
     # Retrieves the user from the DB if the user exists
-    userFromDB = DBQuery(select = f"select username, avatar, password from users where username='{username_email}' or email='{username_email}'", oneRow = True)
-    
+    userFromDB = queryDB(query="select username, avatar, password from users where username=%s or email=%s", oneRow=True, queryTerms=(username_email, username_email))
     # Checks user is not null/none
     if userFromDB:
 
@@ -78,7 +77,7 @@ def getToken():
             access_token = create_access_token(identity=userFromDB['username'])
 
             # Stores the latest access and refresh token generated for the user in the DB with a datetime stamp and a session start timestamp
-            data = DBQuery(modify = f"Update users set access_token='{access_token}', refresh_token='{refresh_token}', datetimeLastLogin=CURRENT_TIMESTAMP(), sessionStart=CURRENT_TIMESTAMP() where username='{userFromDB['username']}'")
+            data = queryDB(modify=True, query="Update users set access_token=%s, refresh_token=%s, datetimeLastLogin=CURRENT_TIMESTAMP(), sessionStart=CURRENT_TIMESTAMP() where username=%s", queryTerms=(access_token, refresh_token, userFromDB['username']))
             
             # Confirms the above ran without error
             if data != False:
@@ -99,10 +98,10 @@ def getToken():
 def retrieveAccountData():
 
     # Get identity(username) from the access(JWT) token
-    current_user = get_jwt_identity()
+    currentUser = get_jwt_identity()
     
     # Retrieve user info from DB
-    accountInfo = DBQuery(select = f"select username,avatar, datetimeLastLogin, datetimeRegistration, email, firstname, lastname from users where username='{current_user}'", oneRow = True)
+    accountInfo = queryDB(query="select username,avatar, datetimeLastLogin, datetimeRegistration, email, firstname, lastname from users where username=%s", oneRow = True, queryTerms=(currentUser, ))
     
     # Checks account info is not null/none suggesting a failure to retrieve from the DB
     if accountInfo != False:
@@ -120,10 +119,10 @@ def retrieveAccountData():
 def retrieveAllNotes():
 
     # Get identity(username) from the access(JWT) token
-    current_user = get_jwt_identity()
+    currentUser = get_jwt_identity()
 
     # Retrieve all notes associated with the user
-    data = DBQuery(select = f"select id, title, body, timeStampEntered, timeStampModified, from notes where user=(select id from users where username='{current_user}')", allRows=True)
+    data = queryDB(query="select id, title, body, timeStampEntered, timeStampModified, from notes where user=(select id from users where username=%s)", allRows=True, queryTerms=(currentUser, ))
 
     # Checks notes where successfully retrieved
     if data != False:
@@ -143,7 +142,7 @@ def retrieveAllNotes():
 def addNote():
 
     # Gets user's identity (username)
-    current_user = get_jwt_identity()
+    currentUser = get_jwt_identity()
     title = request.json.get('title')
     body = request.json.get('body')
 
@@ -152,7 +151,7 @@ def addNote():
         return resp(code=400, msg="No title, Please add a title to your note.")
     
     # Adds not to DB, If for any reason the note is not saved an error message will be returned
-    if DBQuery(modify= f"insert into notes (title, body, timeStampEntered, timeStampModified) values ({title}, {body}, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP())") == False:
+    if queryDB(modify=True, query="insert into notes (title, body, timeStampEntered, timeStampModified) values (%s, %s, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP())", queryTerms=(title, body)) == False:
         return resp(code=400, msg="Error saving note, Please try again later.")
     
     # Return success if not saved
@@ -165,13 +164,13 @@ def addNote():
 # Checks request is valid JSON
 @is_json
 def save_todos():
-    current_user = get_jwt_identity()
+    currentUser = get_jwt_identity()
     noteId = request.json.get('id')
     body = request.json.get('content')
     title = request.json.get('title')
 
     # Checks noteId is not null/none, Updates the entry in the DB
-    if noteId and DBQuery(modify = f"update notes set timeStampModified=CURRENT_TIMESTAMP(), body='{body}', title='{title}' where id='{noteId}'") != False:
+    if noteId and queryDB(modify=True, query="update notes set timeStampModified=CURRENT_TIMESTAMP(), body=%s, title=%s where id=%s", queryTerms=(body, title, noteId)) != False:
         return resp(code=200, msg="updates saved")
     
     # Returns an error if noteID is null/None or an error is encountered during the DB query
@@ -184,11 +183,11 @@ def save_todos():
 # Checks request is valid JSON
 @is_json
 def deleteNote():
-    current_user = get_jwt_identity()
+    currentUser = get_jwt_identity()
     noteId = request.json.get('id')
 
     # Checks noteId is not null/none then proceeds to delete the requested note
-    if noteId and DBQuery(modify=f"delete from notes where id={noteId} and user=(select id from users where username={current_user})") != False:
+    if noteId and queryDB(modify=True, query="delete from notes where id=%s and user=(select id from users where username=%s)", queryTerms=(noteId, currentUser)) != False:
 
         # Upon successful deletion a response will be resturned to the frontend stating such
         return resp(code=200, msg="Note successfully deleted!")
@@ -197,6 +196,21 @@ def deleteNote():
     return resp(code=400, msg="Error while deleting note, Please try again later.")
 
 
+@app.route('/filter', methods=['POST'])
+# Checks for a valid refresh token
+@jwt_refresh_token_required
+# Checks request is valid JSON
+@is_json
+def filter():
+    currentUser = get_jwt_identity()
+    searchterm = request.json.get('filterTerm')
+
+    if searchterm != None and searchterm != "":
+        #DBQuery(select="select * from notes where user=(select id from users where username=%s);")
+        return
+    return
+
+    
 ##@app.route('/updateAccountData', methods=['POST'])
 @app.route('/updateAvatar', methods=['POST'])
 @jwt_required
