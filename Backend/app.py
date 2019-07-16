@@ -50,7 +50,7 @@ def register():
         return resp(code=400,msg="Issue during registration! Please try again later.")
 
     # Returns a success message to the frontend
-    return resp(code=200, msg="Registration successful.")
+    return resp(msg="Registration successful.")
 
 
 @app.route('/login', methods=['POST'])
@@ -77,13 +77,13 @@ def getToken():
             access_token = create_access_token(identity=userFromDB['username'])
 
             # Stores the latest access and refresh token generated for the user in the DB with a datetime stamp and a session start timestamp
-            data = queryDB(modify=True, query="Update users set access_token=%s, refresh_token=%s, datetimeLastLogin=CURRENT_TIMESTAMP(), sessionStart=CURRENT_TIMESTAMP() where username=%s", queryTerms=(access_token, refresh_token, userFromDB['username']))
+            data = queryDB(modify=True, query="Update users set access_token=%s, refresh_token=%s, timeStampLastLogin=CURRENT_TIMESTAMP(), timeStampSessionStart=CURRENT_TIMESTAMP() where username=%s", queryTerms=(access_token, refresh_token, userFromDB['username']))
             
             # Confirms the above ran without error
             if data != False:
                 
                 # Returns an access and refresh token along with the users username and avatar
-                return resp(data={"access_token": access_token, "refresh_token": refresh_token, "username": userFromDB['username'], "avatar": f"http://localhost:5000/static/profileImages/{userFromDB['avatar']}"}, code=200, msg="token request successful")
+                return resp(data={"access_token": access_token, "refresh_token": refresh_token, "username": userFromDB['username'], "avatar": f"http://localhost:5000/static/profileImages/{userFromDB['avatar']}"}, msg="token request successful")
             
             # If there was an issue storing the latest tokens and timestamps the login will fail and return a failur message
             return resp(code=400, msg="Issue logging in, Please try again.")
@@ -101,13 +101,13 @@ def retrieveAccountData():
     currentUser = get_jwt_identity()
     
     # Retrieve user info from DB
-    accountInfo = queryDB(query="select username,avatar, datetimeLastLogin, datetimeRegistration, email, firstname, lastname from users where username=%s", oneRow = True, queryTerms=(currentUser, ))
+    accountInfo = queryDB(query="select username,avatar, timeStampLastLogin, timeStampRegistration, email, firstname, lastname from users where username=%s", oneRow = True, queryTerms=(currentUser, ))
     
     # Checks account info is not null/none suggesting a failure to retrieve from the DB
     if accountInfo != False:
 
         # Returns account info
-        return resp(data=accountInfo, code=200)
+        return resp(data=accountInfo)
 
     # If account info retrieval fails for any reason 
     return resp(code=400, msg="Error occured, Please try again later!")
@@ -122,13 +122,13 @@ def retrieveAllNotes():
     currentUser = get_jwt_identity()
 
     # Retrieve all notes associated with the user
-    data = queryDB(query="select id, title, body, timeStampEntered, timeStampModified, from notes where user=(select id from users where username=%s)", allRows=True, queryTerms=(currentUser, ))
+    data = queryDB(query="select id, title, body, timeStampEntered, timeStampModified from notes where user=(select id from users where username=%s)", allRows=True, queryTerms=(currentUser, ))
 
     # Checks notes where successfully retrieved
     if data != False:
 
         # Returns users notes to frontend
-        return resp(data=data, code=200, msg="query successful")
+        return resp(data=data, msg="query successful")
 
     # Returns error message if notes where not retrieved
     return resp(code=400, msg="Error retrieving notes, Please try again later.")
@@ -155,7 +155,7 @@ def addNote():
         return resp(code=400, msg="Error saving note, Please try again later.")
     
     # Return success if not saved
-    return resp(code=200, msg="Note saved.")
+    return resp(msg="Note saved.")
     
     
 @app.route('/updateNote', methods=['POST'])
@@ -171,7 +171,7 @@ def save_todos():
 
     # Checks noteId is not null/none, Updates the entry in the DB
     if noteId and queryDB(modify=True, query="update notes set timeStampModified=CURRENT_TIMESTAMP(), body=%s, title=%s where id=%s", queryTerms=(body, title, noteId)) != False:
-        return resp(code=200, msg="updates saved")
+        return resp(msg="updates saved")
     
     # Returns an error if noteID is null/None or an error is encountered during the DB query
     return resp(code=500, msg="error saving update")
@@ -190,7 +190,7 @@ def deleteNote():
     if noteId and queryDB(modify=True, query="delete from notes where id=%s and user=(select id from users where username=%s)", queryTerms=(noteId, currentUser)) != False:
 
         # Upon successful deletion a response will be resturned to the frontend stating such
-        return resp(code=200, msg="Note successfully deleted!")
+        return resp(msg="Note successfully deleted!")
 
     # If noteId is null/none or the DB query fails an error message will be returned to the frontend
     return resp(code=400, msg="Error while deleting note, Please try again later.")
@@ -205,10 +205,17 @@ def filter():
     currentUser = get_jwt_identity()
     searchterm = request.json.get('filterTerm')
 
-    if searchterm != None and searchterm != "":
-        #DBQuery(select="select * from notes where user=(select id from users where username=%s);")
-        return
-    return
+    # Checks the search term is not null/none or an empty string
+    if searchterm != None or searchterm != "":
+
+        # Executes tghe filtering query with the provided search term
+        data = queryDB(query="select * from notes where user=(select id from users where username=%s) and body like %s;", allRows=True, queryTerms=(currentUser, '%' + searchterm + '%'))
+
+        # Checks if the has not returned any data
+        # TODO account for a search term not returning results but not failing either
+        if data != False or data != None:
+            return resp(data=data, msg="success")
+    return resp(code=400, msg="Error while attempting to filter notes.")
 
     
 ##@app.route('/updateAccountData', methods=['POST'])
@@ -223,6 +230,6 @@ def updateAccountData():
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             data = DBQuery(modify = f"update accounts set avatar='{filename}' where username='{curr_user}'", select= f"select avatar from accounts where username='{curr_user}'", oneRow=True)
             if data != False:
-                return resp(data={"avatar": f"http://localhost:5000/static/profileImages/{data['avatar']}"}, code=200, msg="avatar added/updated")
+                return resp(data={"avatar": f"http://localhost:5000/static/profileImages/{data['avatar']}"}, msg="avatar added/updated")
             else:
                 return resp(code=500, msg="error adding/updating avatar")
