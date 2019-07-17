@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { createGlobalStyle } from "styled-components";
-import Header from './components/header'
-import NotesList from './components/notelist'
-
+import Header from "./components/Header";
+import Notes from "./pages/notes";
+import Editor from "./components/Editor";
 const GlobalStyle = createGlobalStyle`
   body {
     margin: 0;
@@ -19,5 +19,13 @@ const GlobalStyle = createGlobalStyle`
 `;
 
 export default () => {
-  return <div className="App"><GlobalStyle /><Header /><NotesList /></div>;
-}
+  const [editor, set] = useState(false);
+  return (
+    <div className="App">
+      <GlobalStyle />
+      <Header displayEditor={() => set(!editor)}/>
+      <Notes />
+      {editor && <Editor callback={() => set(!editor)}/>}
+    </div>
+  );
+};
