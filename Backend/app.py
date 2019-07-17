@@ -94,7 +94,7 @@ def getToken():
 
 @app.route('/retrieveAccountData', methods=['POST'])
 # Checks that the request includes a valid access(JWT) token
-@jwt_required
+@jwt_refresh_token_required
 def retrieveAccountData():
 
     # Get identity(username) from the access(JWT) token

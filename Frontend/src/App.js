@@ -1,12 +1,13 @@
 import React, { useState } from "react";
-import { createGlobalStyle } from "styled-components";
+import styled, { createGlobalStyle } from "styled-components";
+import { Router } from "@reach/router";
 import Header from "./components/Header";
-import Notes from "./pages/notes";
+import Notes from "./pages/Notes_Page";
 import Editor from "./components/Editor";
+import Account from "./pages/Account_Page";
 const GlobalStyle = createGlobalStyle`
   body {
     margin: 0;
-    padding: 0px 16px 0px 16px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
       "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
       sans-serif;
@@ -18,14 +19,25 @@ const GlobalStyle = createGlobalStyle`
   }
 `;
 
+const Wrapper = styled.div`
+  margin: inherit;
+`;
+
+const HomePage = () => <Notes />;
+const EditorPage = () => <Editor />;
+const AccountPage = () => <Account />;
+
 export default () => {
   const [editor, set] = useState(false);
   return (
-    <div className="App">
+    <Wrapper>
       <GlobalStyle />
-      <Header displayEditor={() => set(!editor)}/>
-      <Notes />
-      {editor && <Editor callback={() => set(!editor)}/>}
-    </div>
+      <Header displayEditor={() => set(!editor)} />
+      <Router>
+        <HomePage path="/" />
+        <EditorPage path="/editor" callback={() => set(!editor)} />
+        <AccountPage path="/account" />
+      </Router>
+    </Wrapper>
   );
 };

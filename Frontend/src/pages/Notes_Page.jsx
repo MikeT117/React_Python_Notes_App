@@ -6,6 +6,7 @@ const Wrapper = styled.div`
   display: flex;
   flex-wrap: wrap;
   justify-content: space-around;
+  padding: 0px 16px 0px 16px;
 `;
 
 

@@ -4,8 +4,8 @@ import vegetaBlue from "../assets/images/VegetaBlue.jpg";
 
 
 const Wrapper = styled.div`
-  width: 42px;
-  height: 42px;
+  width: ${props => props.size || '42px'};
+  height: ${props => props.size || '42px'};
   border-radius: 50%;
   padding: 2px;
   background: ${props => props.ringColor}; 
@@ -17,8 +17,8 @@ const Avatar = styled.img`
   border-radius: inherit;
 `
 
-export default () => {
+export default ({ size }) => {
   return (
-  <Wrapper ringColor='#04cef4'><Avatar src={vegetaBlue}/></Wrapper>
+  <Wrapper size={size} ringColor='#04cef4'><Avatar src={vegetaBlue}/></Wrapper>
   )
 };
