@@ -5,12 +5,28 @@ const Note = styled.div`
   display: flex;
   flex-direction: column;
   flex-grow: 1;
-  border-radius: 8px;
+  border-radius: .5em;
   border: 1px solid rgba(0, 0, 0, 0.12);
-  padding: 16px;
-  margin: 0px 8px 8px 8px;
-  max-width: 420px;
-  min-width: 280px;
+  padding: 1em;
+  margin: .5em;
+  /* margin: 0px 8px 8px 8px; */
+  @media (max-width: 12000px) {
+    max-width: 20%;
+  }
+  @media (max-width: 1200px) {
+    max-width: 20%;
+  }
+  @media (max-width: 992px) {
+    max-width: 28%;
+  }
+  @media (max-width: 768px) {
+    max-width: 43%;
+  }
+  @media (max-width: 576px) {
+    min-width: 100%;
+    max-width: 100%;
+    margin: 0.5em 0;
+  }
 `;
 
 const Title = styled.div`
@@ -28,8 +44,8 @@ const Snippet = styled.div`
   font-size: 0.75em;
 `;
 
-export default ({ title, body }) => (
-  <Note>
+export default ({ title, body, ...rest }) => (
+  <Note {...rest}>
     <Title>{title}</Title>
     <Snippet dangerouslySetInnerHTML={{ __html: body }} />
   </Note>

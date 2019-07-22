@@ -112,17 +112,22 @@ def retrieveAccountData():
     # If account info retrieval fails for any reason 
     return resp(code=400, msg="Error occured, Please try again later!")
 
+ # select * FROM notes WHERE body LIKE '%%' OR title LIKE '%%'
 
-@app.route('/retrieveAllNotes', methods=['POST'])
-# Confirms request contains valid refresh token(This token has a lower ttl than a standard access token)
+@app.route('/retrieveNotes', methods=['POST'])
+# Checks for a valid refresh token
 @jwt_refresh_token_required
-def retrieveAllNotes():
-
+# Checks request is valid JSON
+@is_json
+def retrieveNotes():
     # Get identity(username) from the access(JWT) token
     currentUser = get_jwt_identity()
+    print(request.json.get('filter'))
+    # Get filter term
+    filterTerm = request.json.get('filter')
 
     # Retrieve all notes associated with the user
-    data = queryDB(query="select id, title, body, timeStampEntered, timeStampModified from notes where user=(select id from users where username=%s)", allRows=True, queryTerms=(currentUser, ))
+    data = queryDB(query="select id, title, body, timeStampEntered, timeStampModified from notes where user=(select id from users where username=%s) and title like %s or body like %s", allRows=True, queryTerms=(currentUser, '%' + filterTerm + '%', '%' + filterTerm + '%'))
 
     # Checks notes where successfully retrieved
     if data != False:
@@ -132,49 +137,35 @@ def retrieveAllNotes():
 
     # Returns error message if notes where not retrieved
     return resp(code=400, msg="Error retrieving notes, Please try again later.")
-
-
-@app.route('/addNote', methods=['POST'])
+   
+@app.route('/saveUpdateNote', methods=['POST'])
 # Checks for a valid refresh token
 @jwt_refresh_token_required
 # Checks request is valid JSON
 @is_json
-def addNote():
+def saveUpdateNote():
 
     # Gets user's identity (username)
     currentUser = get_jwt_identity()
-    title = request.json.get('title')
-    body = request.json.get('body')
 
-    # Checks title is not null/none or an empty string
-    if title == None or title == "":
-        return resp(code=400, msg="No title, Please add a title to your note.")
-    
-    # Adds not to DB, If for any reason the note is not saved an error message will be returned
-    if queryDB(modify=True, query="insert into notes (title, body, timeStampEntered, timeStampModified) values (%s, %s, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP())", queryTerms=(title, body)) == False:
-        return resp(code=400, msg="Error saving note, Please try again later.")
-    
-    # Return success if not saved
-    return resp(msg="Note saved.")
-    
-    
-@app.route('/updateNote', methods=['POST'])
-# Checks for a valid refresh token
-@jwt_refresh_token_required
-# Checks request is valid JSON
-@is_json
-def save_todos():
-    currentUser = get_jwt_identity()
+    # Gets noteID if provided
     noteId = request.json.get('id')
-    body = request.json.get('content')
+
+    # Gets the note data from the request
+    body = request.json.get('body')
     title = request.json.get('title')
 
-    # Checks noteId is not null/none, Updates the entry in the DB
-    if noteId and queryDB(modify=True, query="update notes set timeStampModified=CURRENT_TIMESTAMP(), body=%s, title=%s where id=%s", queryTerms=(body, title, noteId)) != False:
-        return resp(msg="updates saved")
-    
-    # Returns an error if noteID is null/None or an error is encountered during the DB query
-    return resp(code=500, msg="error saving update")
+    # Checks noteId is not null/none (If noteId is present this is an existing note and therefore an update is necessary, otherwise it's a new note.
+    if noteId:
+        if queryDB(modify=True, query="update notes set timeStampModified=CURRENT_TIMESTAMP(), body=%s, title=%s where id=%s", queryTerms=(body, title, noteId)) != False:
+            return resp(msg="updates saved")
+
+    elif queryDB(modify=True, query="insert into notes (title, body, timeStampEntered, timeStampModified, user) values (%s, %s, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), (select id from users where username=%s))", queryTerms=(title, body, currentUser)) != False:
+
+        return resp(msg="Note saved.")
+
+    # Returns an error if noteID is null/None or an error is encountered during saving/updating
+    return resp(code=500, msg="Error saving note! Please try again later")
 
 
 @app.route('/deleteNote', methods=['POST'])
@@ -194,29 +185,6 @@ def deleteNote():
 
     # If noteId is null/none or the DB query fails an error message will be returned to the frontend
     return resp(code=400, msg="Error while deleting note, Please try again later.")
-
-
-@app.route('/filter', methods=['POST'])
-# Checks for a valid refresh token
-@jwt_refresh_token_required
-# Checks request is valid JSON
-@is_json
-def filter():
-    currentUser = get_jwt_identity()
-    searchterm = request.json.get('filterTerm')
-
-    # Checks the search term is not null/none or an empty string
-    if searchterm != None or searchterm != "":
-
-        # Executes tghe filtering query with the provided search term
-        data = queryDB(query="select * from notes where user=(select id from users where username=%s) and body like %s;", allRows=True, queryTerms=(currentUser, '%' + searchterm + '%'))
-
-        # Checks if the has not returned any data
-        # TODO account for a search term not returning results but not failing either
-        if data != False or data != None:
-            return resp(data=data, msg="success")
-    return resp(code=400, msg="Error while attempting to filter notes.")
-
     
 ##@app.route('/updateAccountData', methods=['POST'])
 @app.route('/updateAvatar', methods=['POST'])

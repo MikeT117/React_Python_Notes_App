@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import ReactQuill from "react-quill";
-
+import { useDispatch } from "react-redux";
+import { save } from "../api";
 const Wrapper = styled.div`
   display: flex;
   position: fixed;
@@ -12,7 +13,7 @@ const Wrapper = styled.div`
   width: 100%;
   height: 100%;
   align-items: center;
-  padding: 0px 16px 0px 15px;
+  padding: 0 1em;
 `;
 
 const Overlay = styled.span`
@@ -21,44 +22,61 @@ const Overlay = styled.span`
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.45);
+  background-color: rgba(255, 255, 255, 0.45);
   z-index: 80;
 `;
 
 const Editor = styled.div`
-  border-radius: 8px;
+  border-radius: 0.5em;
   background: #fff;
-  padding: 8px;
+  padding: 0.5em;
   flex-grow: 1;
   z-index: 100;
+  background: #f7f7f7;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  @media (max-width: 12000px) {
+    max-width: 50%;
+  }
+  @media (max-width: 1200px) {
+    max-width: 70%;
+  }
+  @media (max-width: 992px) {
+    max-width: 80%;
+  }
+  @media (max-width: 768px) {
+    max-width: 90%;
+  }
+  @media (max-width: 576px) {
+    max-width: 100%;
+  }
 `;
 
 const StyledReactQuill = styled(ReactQuill)`
   background: inherit;
-  border-radius: 8px;
+  border-radius: 0.5em;
   & > .ql-toolbar {
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
+    border-top-left-radius: 0.5em;
+    border-top-right-radius: 0.5em;
     border-bottom: none;
   }
   & > .ql-container {
-    border-bottom-left-radius: 8px;
-    border-bottom-right-radius: 8px;
+    border-bottom-left-radius: 0.5em;
+    border-bottom-right-radius: 0.5em;
   }
 `;
 const ButtonWrapper = styled.div`
   display: flex;
   justify-content: flex-end;
-  padding-top: 8px;
+  padding-top: 0.5em;
   & > button:last-child {
-    margin-left: 8px;
+    margin-left: 0.5em;
   }
 `;
 const Button = styled.button`
-  border-radius: 8px;
+  border-radius: 0.5em;
   border: 1px solid rgba(0, 0, 0, 0.12);
   background: none;
-  padding: 8px;
+  padding: 0.5em;
   color: rgba(0, 0, 0, 0.87);
   font-family: "Open Sans", sans-serif;
   font-weight: 600;
@@ -77,18 +95,53 @@ const Title = styled.input`
   font-size: 1.15em;
   color: rgba(0, 0, 0, 0.87);
   border: none;
-  padding: 8px 8px;
+  padding: 0.5em;
+  background: #f7f7f7;
   &:focus {
     outline: none;
   }
 `;
 
-export default ({ callback }) => {
-  const [body, setBody] = useState("");
-  const [title, setTitle] = useState("");
+let timeout;
+
+export default ({ newNote, noteData, close }) => {
+  const [body, setBody] = useState(newNote ? "" : noteData[2]);
+  const [title, setTitle] = useState(newNote ? "" : noteData[1]);
+  const dispatch = useDispatch();
+  const handleSave = () => {
+    dispatch(
+      save(
+        newNote
+          ? { title: title, body: body }
+          : { id: noteData[0], title: title, body: body }
+      )
+    );
+  };
+
+  const shallowSave = () => {
+    if (!newNote) {
+      console.log(title, body);
+      // Dispatch saving event - Display save progress in header!
+      // Create syncing event for backend pushing.
+      clearTimeout(timeout);
+      timeout = setTimeout(
+        () =>
+          dispatch({
+            type: "UPDATE_NOTE",
+            payload: { id: noteData[0], title: title, body: body }
+          }),
+        2000
+      );
+    }
+  };
+
   return (
     <Wrapper>
-      <Overlay onClick={callback} />
+      <Overlay
+        onClick={() => {
+          window.confirm("Are you sure?") === true ? close() : void 0;
+        }}
+      />
       <Editor>
         <Title
           placeholder="Title"
@@ -99,11 +152,11 @@ export default ({ callback }) => {
           placeholder="Text here"
           theme="snow"
           value={body}
+          onKeyUp={shallowSave}
           onChange={e => setBody(e)}
         />
         <ButtonWrapper>
-          <Button onClick={() => console.log(body)}>Discard</Button>
-          <Button onClick={() => console.log(title)}>Save</Button>
+          <Button onClick={handleSave}>Save</Button>
         </ButtonWrapper>
       </Editor>
     </Wrapper>

@@ -1,38 +1,73 @@
 import React, { useState, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import styled from "styled-components";
-import Note from '../components/Note'
+import Note from "../components/Note";
+import Header from "../components/Header";
+import Editor from "../components/Editor";
+import { getAllNotes } from "../api";
 
 const Wrapper = styled.div`
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-around;
-  padding: 0px 16px 0px 16px;
+  justify-content: space-evenly;
+  @media (max-width: 12000px) {
+    justify-content: flex-start;
+  }
+  padding: 0 1.5em;
+  @media (max-width: 900px) {
+    justify-content: space-evenly;
+  }
 `;
 
-
-
 export default () => {
-  const [notes, set] = useState(null);
-  useEffect(() => {
-    const data = async () => {
-      const refresh_token =
-        "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1NjMyMzIwOTcsIm5iZiI6MTU2MzIzMjA5NywianRpIjoiYzE4NWNjYWMtODAxZS00ZWQ2LWE5OTEtNzcyZGU2ODJlMGFkIiwiZXhwIjoxNTY1ODI0MDk3LCJpZGVudGl0eSI6IlJhem9yMTE2IiwidHlwZSI6InJlZnJlc2gifQ.LA9KBfsvgHYUe17sQnP0OaA3nPxr1EDnf0VEYI23qTg";
+  const notes = useSelector(state => state.rootReducer.notes.main);
 
-      const resp = await fetch("http://localhost:5000/retrieveAllNotes", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${refresh_token}`
-        }
-      });
-      const json = await resp.json();
-      set(json);
-    };
-    data();
+  const [editor, setEditor] = useState({
+    newNote: true,
+    open: false,
+    noteData: null
+  });
+
+  const [saving, setSaving] = useState(0);
+  const dispatch = useDispatch();
+  useEffect(() => {
+    dispatch(getAllNotes());
   }, []);
+
   return (
-    <Wrapper>
-      {notes && notes.map(d => <Note key={d.id} title={d.title} body={d.body}/>)}
-    </Wrapper>
+    <>
+      <Header
+        add
+        search
+        saving={saving}
+        newNote={() => setEditor({ ...editor, newNote: true, open: true })}
+      />
+      <Wrapper>
+        {notes &&
+          notes.map(d => (
+            <Note
+              key={d.id}
+              title={d.title}
+              body={d.body}
+              onClick={() =>
+                setEditor({
+                  ...editor,
+                  newNote: false,
+                  open: true,
+                  noteData: [d.id, d.title, d.body]
+                })
+              }
+            />
+          ))}
+      </Wrapper>
+
+      {editor.open && (
+        <Editor
+          {...editor}
+          saving={e => setSaving(e)}
+          close={() => setEditor({ ...editor, open: false })}
+        />
+      )}
+    </>
   );
 };
