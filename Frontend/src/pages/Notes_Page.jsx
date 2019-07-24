@@ -4,7 +4,7 @@ import styled from "styled-components";
 import Note from "../components/Note";
 import Header from "../components/Header";
 import Editor from "../components/Editor";
-import { getAllNotes } from "../api";
+import { getAllNotes, syncToBackend } from "../api";
 
 const Wrapper = styled.div`
   display: flex;
@@ -21,7 +21,7 @@ const Wrapper = styled.div`
 
 export default () => {
   const notes = useSelector(state => state.rootReducer.notes.main);
-
+  const unsynced = useSelector(state => state.rootReducer.notes.unsynced);
   const [editor, setEditor] = useState({
     newNote: true,
     open: false,
@@ -30,6 +30,12 @@ export default () => {
 
   const [saving, setSaving] = useState(0);
   const dispatch = useDispatch();
+
+  window.test = () => {
+    if (unsynced.length > 0)
+      unsynced.map(d => dispatch(syncToBackend({ ...d })));
+  };
+
   useEffect(() => {
     dispatch(getAllNotes());
   }, []);
@@ -40,7 +46,14 @@ export default () => {
         add
         search
         saving={saving}
-        newNote={() => setEditor({ ...editor, newNote: true, open: true })}
+        newNote={() =>
+          setEditor({
+            ...editor,
+            newNote: true,
+            open: true,
+            noteData: { title: "", body: "" }
+          })
+        }
       />
       <Wrapper>
         {notes &&
@@ -54,7 +67,7 @@ export default () => {
                   ...editor,
                   newNote: false,
                   open: true,
-                  noteData: [d.id, d.title, d.body]
+                  noteData: { ...d }
                 })
               }
             />

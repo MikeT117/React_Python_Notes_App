@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import ReactQuill from "react-quill";
-import { useDispatch } from "react-redux";
-import { save } from "../api";
+import { useDispatch, useSelector } from "react-redux";
 const Wrapper = styled.div`
   display: flex;
   position: fixed;
@@ -102,37 +101,26 @@ const Title = styled.input`
   }
 `;
 
-let timeout;
-
 export default ({ newNote, noteData, close }) => {
-  const [body, setBody] = useState(newNote ? "" : noteData[2]);
-  const [title, setTitle] = useState(newNote ? "" : noteData[1]);
+  const [title, setTitle] = useState(noteData.title);
+  const [body, setBody] = useState(noteData.body);
+
+  const userId = useSelector(state => state.rootReducer.user.userId);
+  console.log(userId);
   const dispatch = useDispatch();
+
   const handleSave = () => {
     dispatch(
-      save(
-        newNote
-          ? { title: title, body: body }
-          : { id: noteData[0], title: title, body: body }
-      )
-    );
-  };
-
-  const shallowSave = () => {
-    if (!newNote) {
-      console.log(title, body);
-      // Dispatch saving event - Display save progress in header!
-      // Create syncing event for backend pushing.
-      clearTimeout(timeout);
-      timeout = setTimeout(
-        () =>
-          dispatch({
+      newNote
+        ? {
+            type: "ADD_NOTE",
+            payload: { user: userId, title: title, body: body }
+          }
+        : {
             type: "UPDATE_NOTE",
-            payload: { id: noteData[0], title: title, body: body }
-          }),
-        2000
-      );
-    }
+            payload: { ...noteData, title: title, body: body }
+          }
+    );
   };
 
   return (
@@ -152,7 +140,7 @@ export default ({ newNote, noteData, close }) => {
           placeholder="Text here"
           theme="snow"
           value={body}
-          onKeyUp={shallowSave}
+          // onKeyUp={shallowSave}
           onChange={e => setBody(e)}
         />
         <ButtonWrapper>

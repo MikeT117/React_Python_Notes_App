@@ -1,7 +1,7 @@
 import React from "react";
 import styled from "styled-components";
 import { motion } from "framer-motion";
-import { IoMdClose } from "react-icons/io";
+import { IoMdArrowBack } from "react-icons/io";
 import { navigate } from "@reach/router";
 
 const Wrapper = styled(motion.div)`
@@ -10,7 +10,7 @@ const Wrapper = styled(motion.div)`
   flex-direction: column;
   height: 100%;
   width: 250px;
-  z-index: 110;
+  z-index: 50;
   background-color: #f7f7f7;
   left: -250px;
   top: 0;
@@ -22,8 +22,8 @@ const UL = styled.ul`
   padding: 0;
   & > li {
     font-family: "Open Sans", sans-serif;
-    font-weight: 400;
-    color: rgba(0, 0, 0, 0.8);
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.6);
     padding: 1em 0 1em 1.5em;
     list-style-type: none;
     border-top: 1px solid rgba(0, 0, 0, 0.12);
@@ -54,22 +54,36 @@ const ButtonWrapper = styled.div`
   }
 `;
 
+const Overlay = styled.span`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.45);
+  z-index: 40;
+`;
+
 export default ({ open, close }) => {
   return (
-    <Wrapper
-      animate={{ x: open ? 250 : 0 }}
-      transition={{ type: "spring", stiffness: 500, damping: 100 }}
-    >
-      <DrawerHeader>
-        <ButtonWrapper onClick={close}>
-          <IoMdClose size="1.5em" />
-        </ButtonWrapper>
-      </DrawerHeader>
+    <>
+      {open && <Overlay onClick={close} />}
+      <Wrapper
+        onKeyUp={e => console.log(e.key)}
+        animate={{ x: open ? 250 : 0 }}
+        transition={{ type: "spring", stiffness: 500, damping: 100 }}
+      >
+        <DrawerHeader>
+          <ButtonWrapper onClick={close}>
+            <IoMdArrowBack size="1.5em" />
+          </ButtonWrapper>
+        </DrawerHeader>
 
-      <UL>
-        <li onClick={() => navigate("/")}>Home</li>
-        <li onClick={() => navigate("/account")}>Account</li>
-      </UL>
-    </Wrapper>
+        <UL>
+          <li onClick={() => navigate("/")}>Home</li>
+          <li onClick={() => navigate("/account")}>Account</li>
+        </UL>
+      </Wrapper>
+    </>
   );
 };

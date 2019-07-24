@@ -39,6 +39,7 @@ const LoginPage = isLoggedIn =>
   isLoggedIn.isLoggedIn ? <Redirect to="/" noThrow /> : <Login />;
 const RegisterPage = isLoggedIn =>
   isLoggedIn.isLoggedIn ? <Redirect to="/" noThrow /> : <Register />;
+
 export default () => {
   const isLoggedIn = useSelector(state => state.rootReducer.user.isLoggedIn);
   return (
