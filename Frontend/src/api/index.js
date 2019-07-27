@@ -1,9 +1,5 @@
-import { async } from "q";
-
-export const getAllNotes = (search = "") => {
+export const getAllNotes = creds => {
   return async dispatch => {
-    const refresh_token =
-      "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1NjMyMzIwOTcsIm5iZiI6MTU2MzIzMjA5NywianRpIjoiYzE4NWNjYWMtODAxZS00ZWQ2LWE5OTEtNzcyZGU2ODJlMGFkIiwiZXhwIjoxNTY1ODI0MDk3LCJpZGVudGl0eSI6IlJhem9yMTE2IiwidHlwZSI6InJlZnJlc2gifQ.LA9KBfsvgHYUe17sQnP0OaA3nPxr1EDnf0VEYI23qTg";
     try {
       const resp = await fetch(
         `http://${window.location.hostname}:5000/retrieveNotes`,
@@ -11,9 +7,9 @@ export const getAllNotes = (search = "") => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${refresh_token}`
+            Authorization: `Bearer ${creds}`
           },
-          body: JSON.stringify({ filter: search })
+          body: ""
         }
       );
       if (resp.status === 200) {
@@ -26,9 +22,7 @@ export const getAllNotes = (search = "") => {
   };
 };
 
-export const retrieveAccountData = () => {
-  const refresh_token =
-    "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1NjMyMzIwOTcsIm5iZiI6MTU2MzIzMjA5NywianRpIjoiYzE4NWNjYWMtODAxZS00ZWQ2LWE5OTEtNzcyZGU2ODJlMGFkIiwiZXhwIjoxNTY1ODI0MDk3LCJpZGVudGl0eSI6IlJhem9yMTE2IiwidHlwZSI6InJlZnJlc2gifQ.LA9KBfsvgHYUe17sQnP0OaA3nPxr1EDnf0VEYI23qTg";
+export const retrieveAccountData = creds => {
   return async dispatch => {
     try {
       const resp = await fetch(
@@ -37,7 +31,7 @@ export const retrieveAccountData = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${refresh_token}`
+            Authorization: `Bearer ${creds}`
           }
         }
       );
@@ -74,51 +68,35 @@ export const login = userDetails => {
   };
 };
 
-
-export const syncToBackend = data => {
-  console.log("Sync hit!")
+export const syncToBackend = (
+  creds,
+  data,
+  endpoint = "saveUpdateNote",
+  type = "SYNC_WITH_BACKEND_ADD_UPDATE"
+) => {
   // dispatch an event to notify the user that syncing has begun
-  const refresh_token =
-    "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1NjMyMzIwOTcsIm5iZiI6MTU2MzIzMjA5NywianRpIjoiYzE4NWNjYWMtODAxZS00ZWQ2LWE5OTEtNzcyZGU2ODJlMGFkIiwiZXhwIjoxNTY1ODI0MDk3LCJpZGVudGl0eSI6IlJhem9yMTE2IiwidHlwZSI6InJlZnJlc2gifQ.LA9KBfsvgHYUe17sQnP0OaA3nPxr1EDnf0VEYI23qTg";
-
   return async dispatch => {
     try {
       const resp = await fetch(
-        `http://${window.location.hostname}:5000/saveUpdateNote`,
+        `http://${window.location.hostname}:5000/${endpoint}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${refresh_token}`
+            Authorization: `Bearer ${creds}`
           },
           body: JSON.stringify(data)
         }
       );
 
       if (resp.status === 200) {
-        dispatch({type: "SYNC_WITH_BACKEND", payload: data.id});
+        dispatch({ type: type, payload: data.id });
         // dispatch an event to notify the user that syncing has completed
         return;
       }
       // dispatch an event to notify the user that syncing has failed
     } catch (e) {
-      console.log("Issue saving note, Please try again later!", e);
+      console.log("Issue during sync, Please try again later!", e);
     }
   };
 };
-
-/*   const shallowSave = () => {
-    if (!newNote) {
-      // Dispatch saving event - Display save progress in header!
-      // Create syncing event for backend pushing.
-      clearTimeout(timeout);
-      timeout = setTimeout(
-        () =>
-          dispatch({
-            type: "UPDATE_NOTE",
-            payload: { id: noteData[0], title: title, body: body }
-          }),
-        2000
-      );
-    }
-  }; */

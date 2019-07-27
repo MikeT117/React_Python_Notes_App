@@ -5,10 +5,10 @@ const Note = styled.div`
   display: flex;
   flex-direction: column;
   flex-grow: 1;
-  border-radius: .5em;
+  border-radius: 0.5em;
   border: 1px solid rgba(0, 0, 0, 0.12);
   padding: 1em;
-  margin: .5em;
+  margin: 0.5em;
   /* margin: 0px 8px 8px 8px; */
   @media (max-width: 12000px) {
     max-width: 20%;
@@ -26,6 +26,9 @@ const Note = styled.div`
     min-width: 100%;
     max-width: 100%;
     margin: 0.5em 0;
+  }
+  &:hover {
+    cursor: pointer;
   }
 `;
 

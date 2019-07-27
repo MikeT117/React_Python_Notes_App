@@ -4,7 +4,8 @@ import styled from "styled-components";
 import Note from "../components/Note";
 import Header from "../components/Header";
 import Editor from "../components/Editor";
-import { getAllNotes, syncToBackend } from "../api";
+import { getAllNotes } from "../api";
+import { syncToBackend } from "../api";
 
 const Wrapper = styled.div`
   display: flex;
@@ -19,45 +20,61 @@ const Wrapper = styled.div`
   }
 `;
 
-export default () => {
-  const notes = useSelector(state => state.rootReducer.notes.main);
-  const unsynced = useSelector(state => state.rootReducer.notes.unsynced);
-  const [editor, setEditor] = useState({
-    newNote: true,
-    open: false,
-    noteData: null
-  });
+export default data => {
+  const { userId, refresh_token } = data;
 
-  const [saving, setSaving] = useState(0);
+  const allNotes = useSelector(state => state.rootReducer.notes.all);
+  const filteredNotes = useSelector(state => state.rootReducer.notes.filtered);
+  const unsyncedNotes = useSelector(state => state.rootReducer.notes.unsynced);
+  const deletedNotes = useSelector(state => state.rootReducer.notes.deleted);
+  const [editor, setEditor] = useState({ open: false, note: null });
   const dispatch = useDispatch();
-
-  window.test = () => {
-    if (unsynced.length > 0)
-      unsynced.map(d => dispatch(syncToBackend({ ...d })));
+  const initiateSync = () => {
+    unsyncedNotes.length > 0 &&
+      unsyncedNotes.map(d => dispatch(syncToBackend(refresh_token, d)));
+    deletedNotes.length > 0 &&
+      deletedNotes.map(d =>
+        dispatch(
+          syncToBackend(
+            refresh_token,
+            d,
+            "deleteNote",
+            "SYNC_WITH_BACKEND_DELETE"
+          )
+        )
+      );
+    // dispatch({ type: "SYNC_COMPLETED_SUCCESSFULY" });
   };
 
   useEffect(() => {
-    dispatch(getAllNotes());
-  }, []);
-
+    dispatch(getAllNotes(refresh_token));
+  }, [dispatch]);
   return (
     <>
       <Header
         add
         search
-        saving={saving}
+        setSearch={e => dispatch({ type: "FILTER_NOTES", payload: e })}
+        initiateSync={initiateSync}
         newNote={() =>
           setEditor({
             ...editor,
-            newNote: true,
             open: true,
-            noteData: { title: "", body: "" }
+            note: {
+              title: "",
+              body: "",
+              newNote: true,
+              user: userId,
+              id: Math.max.apply(Math, allNotes.map(d => d.id)) + 1
+            }
           })
         }
       />
+
       <Wrapper>
-        {notes &&
-          notes.map(d => (
+        {allNotes &&
+          filteredNotes.length === 0 &&
+          allNotes.map(d => (
             <Note
               key={d.id}
               title={d.title}
@@ -65,19 +82,31 @@ export default () => {
               onClick={() =>
                 setEditor({
                   ...editor,
-                  newNote: false,
                   open: true,
-                  noteData: { ...d }
+                  note: { ...d, newNote: false }
+                })
+              }
+            />
+          ))}
+        {filteredNotes.length > 0 &&
+          filteredNotes.map(d => (
+            <Note
+              key={d.id}
+              title={d.title}
+              body={d.body}
+              onClick={() =>
+                setEditor({
+                  ...editor,
+                  open: true,
+                  note: { ...d, newNote: false }
                 })
               }
             />
           ))}
       </Wrapper>
-
       {editor.open && (
         <Editor
           {...editor}
-          saving={e => setSaving(e)}
           close={() => setEditor({ ...editor, open: false })}
         />
       )}

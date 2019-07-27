@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import ReactQuill from "react-quill";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
+import genTimeStamp from "../functions";
+
 const Wrapper = styled.div`
   display: flex;
   position: fixed;
-  top: 0;
-  left: 0;
   z-index: 10;
   justify-content: center;
   width: 100%;
@@ -17,8 +17,6 @@ const Wrapper = styled.div`
 
 const Overlay = styled.span`
   position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
   height: 100%;
   background-color: rgba(255, 255, 255, 0.45);
@@ -33,6 +31,8 @@ const Editor = styled.div`
   z-index: 100;
   background: #f7f7f7;
   border: 1px solid rgba(0, 0, 0, 0.12);
+  max-width: 100%;
+  min-width: 50%;
   @media (max-width: 12000px) {
     max-width: 50%;
   }
@@ -63,6 +63,7 @@ const StyledReactQuill = styled(ReactQuill)`
     border-bottom-right-radius: 0.5em;
   }
 `;
+
 const ButtonWrapper = styled.div`
   display: flex;
   justify-content: flex-end;
@@ -101,26 +102,36 @@ const Title = styled.input`
   }
 `;
 
-export default ({ newNote, noteData, close }) => {
-  const [title, setTitle] = useState(noteData.title);
-  const [body, setBody] = useState(noteData.body);
-
-  const userId = useSelector(state => state.rootReducer.user.userId);
-  console.log(userId);
+export default ({ note, close }) => {
+  const [title, setTitle] = useState(note.title);
+  const [body, setBody] = useState(note.body);
   const dispatch = useDispatch();
+  const timestamp = genTimeStamp();
 
   const handleSave = () => {
     dispatch(
-      newNote
+      note.newNote
         ? {
             type: "ADD_NOTE",
-            payload: { user: userId, title: title, body: body }
+            payload: {
+              ...note,
+              title: title,
+              body: body,
+              timeStampModified: timestamp,
+              timeStampEntered: timestamp
+            }
           }
         : {
             type: "UPDATE_NOTE",
-            payload: { ...noteData, title: title, body: body }
+            payload: {
+              ...note,
+              title: title,
+              body: body,
+              timeStampModified: timestamp
+            }
           }
     );
+    close();
   };
 
   return (
@@ -137,10 +148,8 @@ export default ({ newNote, noteData, close }) => {
           onChange={e => setTitle(e.target.value)}
         />
         <StyledReactQuill
-          placeholder="Text here"
           theme="snow"
           value={body}
-          // onKeyUp={shallowSave}
           onChange={e => setBody(e)}
         />
         <ButtonWrapper>

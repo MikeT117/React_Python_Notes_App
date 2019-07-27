@@ -5,6 +5,8 @@ import { useSelector } from "react-redux";
 import Notes from "./pages/Notes_Page";
 import Account from "./pages/Account_Page";
 import { Register, Login } from "./pages/Register_Login_Page";
+import useSyncPolling from "./hooks/useSyncPolling";
+
 const GlobalStyle = createGlobalStyle`
   body {
     margin: 0;
@@ -31,25 +33,31 @@ const StyledRouter = styled(Router)`
   flex-direction: column;
 `;
 
-const HomePage = isLoggedIn =>
-  isLoggedIn.isLoggedIn ? <Notes /> : <Redirect to="/login" noThrow />;
-const AccountPage = isLoggedIn =>
-  isLoggedIn.isLoggedIn ? <Account /> : <Redirect to="/login" noThrow />;
-const LoginPage = isLoggedIn =>
-  isLoggedIn.isLoggedIn ? <Redirect to="/" noThrow /> : <Login />;
-const RegisterPage = isLoggedIn =>
-  isLoggedIn.isLoggedIn ? <Redirect to="/" noThrow /> : <Register />;
+const HomePage = data =>
+  data.isLoggedIn ? <Notes {...data} /> : <Redirect to="/login" noThrow />;
+const AccountPage = data =>
+  data.isLoggedIn ? (
+    <Account refresh_token={data.refresh_token} />
+  ) : (
+    <Redirect to="/login" noThrow />
+  );
+const LoginPage = data =>
+  data.isLoggedIn ? <Redirect to="/" noThrow /> : <Login />;
+
+const RegisterPage = data =>
+  data.isLoggedIn ? <Redirect to="/" noThrow /> : <Register />;
 
 export default () => {
-  const isLoggedIn = useSelector(state => state.rootReducer.user.isLoggedIn);
+  const user = useSelector(state => state.rootReducer.user);
+  useSyncPolling();
   return (
     <>
       <GlobalStyle />
       <StyledRouter>
-        <HomePage isLoggedIn={isLoggedIn} path="/" />
-        <AccountPage isLoggedIn={isLoggedIn} path="/account" />
-        <LoginPage isLoggedIn={isLoggedIn} path="login" />
-        <RegisterPage isLoggedIn={isLoggedIn} path="/register" />
+        <HomePage {...user} path="/" />
+        <AccountPage {...user} path="/account" />
+        <LoginPage {...user} path="login" />
+        <RegisterPage {...user} path="/register" />
       </StyledRouter>
     </>
   );

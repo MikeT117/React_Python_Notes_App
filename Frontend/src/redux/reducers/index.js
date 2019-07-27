@@ -1,15 +1,16 @@
 import { combineReducers } from "redux";
-import genTimeStamp from "../../functions";
 
 const initialState = {
   notes: {
-    base: [],
-    main: [],
-    unsynced: []
+    all: [],
+    filtered: [],
+    unsynced: [],
+    deleted: [],
+    synced: true,
+    syncInterval: 60
   },
   user: {
-    isLoggedIn: false,
-    info: {}
+    isLoggedIn: false
   }
 };
 
@@ -27,6 +28,7 @@ const rootReducer = (state = initialState, action) => {
     case "LOGIN":
     case "LOGOUT":
     case "RETRIEVE_ACCOUNT_DATA":
+    case "MODIFY_SYNC_INTERVAL":
       return Object.assign({}, state, {
         user: userReducer(state.user, action)
       });
@@ -36,68 +38,63 @@ const rootReducer = (state = initialState, action) => {
 };
 
 const notesReducer = (state = initialState.notes, action) => {
-  const timestamp = genTimeStamp();
   switch (action.type) {
     case "ADD_NOTE":
-      const newNote = {
-        ...action.payload,
-        id: Math.max.apply(Math, state.base.map(d => d.id)) + 1,
-        newNote: true,
-        timeStampModified: timestamp,
-        timeStampEntered: timestamp
-      };
-      const base = [...state.base, newNote];
-
       return {
         ...state,
-        base: base,
-        main: base,
-        unsynced: [...state.unsynced, newNote]
+        all: [...state.all, { ...action.payload }],
+        unsynced: [...state.unsynced, { ...action.payload }],
+        synced: false
       };
+
     case "DELETE_NOTE":
-      return state.base.filter(d => d.id !== action.payload);
+      return {
+        ...state,
+        all: state.all.filter(d => d.id !== action.payload),
+        deleted: [...state.deleted, action.payload],
+        synced: false
+      };
 
     case "UPDATE_NOTE":
-      let newData = state.base.map(d => {
-        if (d.id === action.payload.id) {
-          return {
-            ...action.payload,
-            timeStampModified: timestamp
-          };
-        }
-        return d;
-      });
       return {
         ...state,
-        base: newData,
-        main: newData,
-        unsynced: [
-          ...state.unsynced,
-          {
-            ...action.payload,
-            timeStampModified: timestamp,
-            newNote: false
-          }
-        ]
+        all: state.all.map(d => {
+          if (d.id === action.payload.id) return { ...action.payload };
+          return d;
+        }),
+        unsynced: [...state.unsynced, { ...action.payload }],
+        synced: false,
+        filtered: []
       };
 
     case "FILTER_NOTES":
       return {
         ...state,
-        main: state.base.filter(d => {
+        filtered: state.all.filter(d => {
           if (
             d.title.toLowerCase().includes(action.payload) ||
             d.body.toLowerCase().includes(action.payload)
           )
             return d;
+          return null;
         })
       };
     case "RETRIEVE_NOTES":
-      return { ...state, base: action.payload, main: action.payload };
-    case "SYNC_WITH_BACKEND":
+      return { ...state, all: action.payload };
+    case "SYNC_WITH_BACKEND_ADD_UPDATE":
       return {
         ...state,
-        unsynced: state.unsynced.filter(d => d.id != action.payload)
+        unsynced: state.unsynced.filter(d => d.id !== action.payload)
+      };
+    case "SYNC_WITH_BACKEND_DELETE":
+      return {
+        ...state,
+        deleted: state.deleted.filter(d => d.id !== action.payload)
+      };
+    case "SYNC_COMPLETED_SUCCESSFULY":
+      return {
+        ...state,
+        synced: true
       };
     default:
       return state;
@@ -112,6 +109,8 @@ const userReducer = (state = initialState.user, action) => {
       return { isLoggedIn: false, info: {} };
     case "RETRIEVE_ACCOUNT_DATA":
       return { ...state, info: action.payload };
+    case "MODIFY_SYNC_INTERVAL":
+      return { ...state, syncInterval: action.payload };
     default:
       return state;
   }

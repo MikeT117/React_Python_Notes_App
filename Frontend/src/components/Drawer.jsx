@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { motion } from "framer-motion";
 import { IoMdArrowBack } from "react-icons/io";
 import { navigate } from "@reach/router";
-
+import { useSelector } from "react-redux";
 const Wrapper = styled(motion.div)`
   display: flex;
   position: fixed;
@@ -22,11 +22,14 @@ const UL = styled.ul`
   padding: 0;
   & > li {
     font-family: "Open Sans", sans-serif;
-    font-weight: 600;
+    font-size: 0.9em;
     color: rgba(0, 0, 0, 0.6);
     padding: 1em 0 1em 1.5em;
     list-style-type: none;
     border-top: 1px solid rgba(0, 0, 0, 0.12);
+    &:hover {
+      cursor: pointer;
+    }
   }
   & li:last-child {
     border-bottom: 1px solid rgba(0, 0, 0, 0.12);
@@ -43,6 +46,7 @@ const DrawerHeader = styled.div`
 
 const ButtonWrapper = styled.div`
   display: flex;
+  align-items: center;
   padding: 0.25em 0.5em;
   border-radius: 0.5em;
   color: ${props =>
@@ -51,6 +55,9 @@ const ButtonWrapper = styled.div`
     ${props => (!props.dark ? "rgba(0, 0, 0, 0.12)" : "rgb(247, 247, 247)")};
   & svg {
     color: inherit;
+  }
+  &:hover {
+    cursor: pointer;
   }
 `;
 
@@ -64,7 +71,12 @@ const Overlay = styled.span`
   z-index: 40;
 `;
 
+const Span = styled.span`
+  font-family: "Open Sans", sans-serif;
+  padding-left: 0.5em;
+`;
 export default ({ open, close }) => {
+  const userName = useSelector(state => state.rootReducer.user.username);
   return (
     <>
       {open && <Overlay onClick={close} />}
@@ -76,12 +88,14 @@ export default ({ open, close }) => {
         <DrawerHeader>
           <ButtonWrapper onClick={close}>
             <IoMdArrowBack size="1.5em" />
+            <Span>{userName}</Span>
           </ButtonWrapper>
         </DrawerHeader>
 
         <UL>
           <li onClick={() => navigate("/")}>Home</li>
           <li onClick={() => navigate("/account")}>Account</li>
+          <li>Sync Interval</li>
         </UL>
       </Wrapper>
     </>

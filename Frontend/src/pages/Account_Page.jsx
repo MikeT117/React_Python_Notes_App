@@ -5,7 +5,7 @@ import Avatar from "../components/Avatar";
 import Header from "../components/Header";
 import { retrieveAccountData } from "../api";
 
-const Wrapper = styled.div`
+const ContentWrapper = styled.div`
   display: flex;
   flex-direction: column;
 `;
@@ -15,16 +15,16 @@ const AvatarBackground = styled.div`
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background: #04cef4;
+
   flex-grow: 1;
   padding: 32px;
 `;
 
 const UserFull = styled.h1`
   font-family: "Open Sans", sans-serif;
-  font-weight: 400;
-  color: rgba(255, 255, 255, 1);
-  font-size: 1.25em;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.7);
+  font-size: 1.5em;
 `;
 
 const H1 = styled.h1`
@@ -68,17 +68,27 @@ const ItemData = styled.h2`
   margin: 0.5em 0;
 `;
 
-export default () => {
+const Wrapper = styled.div`
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  margin: inherit;
+  display: flex;
+  flex-direction: column;
+  background-image: linear-gradient(#04cef4,#f7f7f7,#f7f7f7);
+`;
+
+export default data => {
   const accData = useSelector(state => state.userReducer.info);
   const dispatch = useDispatch();
   useEffect(() => {
-    dispatch(retrieveAccountData());
-  }, []);
+    dispatch(retrieveAccountData(data.refresh_token));
+  }, [dispatch]);
   return (
-    <>
-      <Header avatarPadding="none" bgColor="rgb(4, 206, 244)" dark={true} />
+    <Wrapper>
+      <Header avatarPadding="none" bgColor="transparent" dark={true} />
       {accData && (
-        <Wrapper>
+        <ContentWrapper>
           <AvatarBackground>
             <Avatar size={"182px"} padding="4px" ringColor="#f7f7f7" />
             <UserFull>{accData.username}</UserFull>
@@ -101,8 +111,8 @@ export default () => {
             <Item>Last Login</Item>
             <ItemData>{accData.timeStampLastLogin}</ItemData>
           </Wrap>
-        </Wrapper>
+        </ContentWrapper>
       )}
-    </>
+    </Wrapper>
   );
 };
