@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { syncToBackend } from "../redux/actions";
 
@@ -12,47 +12,45 @@ export default () => {
   const syncInterval =
     useSelector(state => state.rootReducer.user.syncInterval) * 1000 || 2000;
 
-  const dispatch = useDispatch();
+  const dispatch = useCallback(useDispatch(),[]);
 
-  const unsyncedSync = () => {
+  const unsyncedSync = useCallback(() => {
     unsynced.length > 0 &&
       unsynced.map(d =>
         dispatch(syncToBackend(creds, d, "saveUpdateNote", "SYNC_ADD_UPDATE"))
       );
-  };
+  }, [unsynced, creds, dispatch]);
 
-  const deletedSync = () => {
+  const deletedSync = useCallback(() => {
     deleted.length > 0 &&
       deleted.map(d =>
         dispatch(syncToBackend(creds, d, "deleteNote", "SYNC_DELETE"))
       );
-  };
+  },[deleted, creds, dispatch]);
 
-  const unsyncedInitiator = () => {
+  const unsyncedInitiator = useCallback(() => {
     clearTimeout(unsyncedTimeout);
     unsyncedTimeout = setTimeout(() => {
       unsyncedSync();
     }, syncInterval);
-  };
+  }, [unsyncedSync, syncInterval]);
 
-  const deletedInitiator = () => {
+  const deletedInitiator = useCallback(() => {
     clearTimeout(deleteTimeout);
     deleteTimeout = setTimeout(() => {
       deletedSync();
     }, syncInterval);
-  };
+  }, [deletedSync, syncInterval]);
 
-  const sync = () => {
+  const sync = useCallback(() => {
     unsyncedSync();
     deletedSync();
-  };
+  },[unsyncedSync, deletedSync]);
 
-  useEffect(() => {
-    sync();
-  }, []);
+  useEffect(() => sync(), [sync]);
 
-  useEffect(() => unsyncedInitiator(), [unsynced]);
-  useEffect(() => deletedInitiator(), [deleted]);
+  useEffect(() => unsyncedInitiator(), [unsyncedInitiator]);
+  useEffect(() => deletedInitiator(), [deletedInitiator]);
 
   return [sync];
 };

@@ -110,3 +110,25 @@ export const editorLoadNewNote = (userId, id) => {
     dispatch({ type: "EDITOR_LOAD_NEW", payload: data });
   };
 };
+
+export const register = async data => {
+  try {
+    const resp = await fetch(
+      `http://${window.location.hostname}:5000/register`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+      }
+    );
+    if (resp.status === 200) {
+      return true;
+    }
+    return false;
+  } catch (e) {
+    console.log("Error while resgistering, PLease try again later.", e);
+    return false;
+  }
+};

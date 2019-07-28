@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { useDispatch } from "react-redux";
-import { login } from "../redux/actions";
-import Header from "../components/Header";
-
+import { login, register } from "../redux/actions";
+import { navigate } from "@reach/router";
 const Wrapper = styled.div`
   display: flex;
   flex-grow: 1;
@@ -121,7 +120,7 @@ const P = styled.p`
     text-decoration: none;
   }
   @media (max-width: 576px) {
-    font-size: .85em;
+    font-size: 0.85em;
   }
 `;
 
@@ -133,53 +132,57 @@ export const Register = () => {
     password: "",
     email: ""
   });
+
+  const handleRegister = () => register(userDetails) && navigate("/login");
+
   return (
-    <>
-      <Header />
-      <Wrapper>
-        <FormWrapper>
-          <Title>Register</Title>
-          <Form>
-            <Label htmlFor="username">Username</Label>
-            <Input
-              name="username"
-              value={userDetails.username}
-              onChange={e => set({ ...userDetails, username: e.target.value })}
-              placeholder="Username"
-            />
-            <Label htmlFor="firstname">First Name</Label>
-            <Input
-              name="firstname"
-              value={userDetails.firstname}
-              onChange={e => set({ ...userDetails, firstname: e.target.value })}
-              placeholder="First Name"
-            />
-            <Label htmlFor="lastname">Last Name</Label>
-            <Input
-              name="lastname"
-              value={userDetails.lastname}
-              onChange={e => set({ ...userDetails, lastname: e.target.value })}
-              placeholder="Last Name"
-            />
-            <Label htmlFor="password">Password</Label>
-            <Input
-              name="password"
-              value={userDetails.password}
-              onChange={e => set({ ...userDetails, password: e.target.value })}
-              placeholder="Password"
-            />
-            <Label htmlFor="email">Email Address</Label>
-            <Input
-              name="email"
-              value={userDetails.email}
-              onChange={e => set({ ...userDetails, email: e.target.value })}
-              placeholder="Email Address"
-            />
-          </Form>
-          <Button>Register</Button>
-        </FormWrapper>
-      </Wrapper>
-    </>
+    <Wrapper>
+      <FormWrapper>
+        <Title>Register</Title>
+        <Form>
+          <Label htmlFor="username">Username</Label>
+          <Input
+            name="username"
+            value={userDetails.username}
+            onChange={e => set({ ...userDetails, username: e.target.value })}
+            placeholder="Username"
+          />
+          <Label htmlFor="firstname">First Name</Label>
+          <Input
+            name="firstname"
+            value={userDetails.firstname}
+            onChange={e => set({ ...userDetails, firstname: e.target.value })}
+            placeholder="First Name"
+          />
+          <Label htmlFor="lastname">Last Name</Label>
+          <Input
+            name="lastname"
+            value={userDetails.lastname}
+            onChange={e => set({ ...userDetails, lastname: e.target.value })}
+            placeholder="Last Name"
+          />
+          <Label htmlFor="password">Password</Label>
+          <Input
+            name="password"
+            value={userDetails.password}
+            onChange={e => set({ ...userDetails, password: e.target.value })}
+            placeholder="Password"
+          />
+          <Label htmlFor="email">Email Address</Label>
+          <Input
+            name="email"
+            value={userDetails.email}
+            onChange={e => set({ ...userDetails, email: e.target.value })}
+            placeholder="Email Address"
+          />
+        </Form>
+        <Button onClick={handleRegister}>Register</Button>
+      </FormWrapper>
+      <P>
+        Already have an account? Login{" "}
+        <a href={`http://${window.location.hostname}:3000/login`}>here?</a>
+      </P>
+    </Wrapper>
   );
 };
 
@@ -188,37 +191,34 @@ export const Login = () => {
   const dispatch = useDispatch();
 
   return (
-    <>
-      <Header />
-      <Wrapper>
-        <FormWrapper>
-          <Title>Login</Title>
-          <Form>
-            <Label htmlFor="username">Username</Label>
-            <Input
-              name="username"
-              value={userDetails.usernameEmail}
-              onChange={e =>
-                set({ ...userDetails, usernameEmail: e.target.value })
-              }
-              placeholder="Username/Email"
-            />
-            <Label htmlFor="password">Password</Label>
-            <Input
-              type="password"
-              name="password"
-              value={userDetails.password}
-              onChange={e => set({ ...userDetails, password: e.target.value })}
-              placeholder="Password"
-            />
-          </Form>
-          <Button onClick={() => dispatch(login(userDetails))}>Login</Button>
-        </FormWrapper>
-        <P>
-          Don't have an account? Why not register{" "}
-          <a href={`http://${window.location.hostname}:3000/register`}>here?</a>
-        </P>
-      </Wrapper>
-    </>
+    <Wrapper>
+      <FormWrapper>
+        <Title>Login</Title>
+        <Form>
+          <Label htmlFor="username">Username</Label>
+          <Input
+            name="username"
+            value={userDetails.usernameEmail}
+            onChange={e =>
+              set({ ...userDetails, usernameEmail: e.target.value })
+            }
+            placeholder="Username/Email"
+          />
+          <Label htmlFor="password">Password</Label>
+          <Input
+            type="password"
+            name="password"
+            value={userDetails.password}
+            onChange={e => set({ ...userDetails, password: e.target.value })}
+            placeholder="Password"
+          />
+        </Form>
+        <Button onClick={() => dispatch(login(userDetails))}>Login</Button>
+      </FormWrapper>
+      <P>
+        Don't have an account? Why not register{" "}
+        <a href={`http://${window.location.hostname}:3000/register`}>here?</a>
+      </P>
+    </Wrapper>
   );
 };

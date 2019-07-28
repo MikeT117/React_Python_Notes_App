@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import styled from "styled-components";
 import Note from "../components/Note";
@@ -36,7 +36,7 @@ export default (data, sync) => {
 
   useEffect(() => {
     dispatch(getAllNotes(refresh_token));
-  }, [dispatch]);
+  }, [dispatch, refresh_token]);
 
   return (
     <>

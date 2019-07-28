@@ -85,6 +85,7 @@ const notesReducer = (state = initialState.notes, action) => {
           note: {
             ...state.all.filter(d => {
               if (d.id === action.payload) return d;
+              return null
             })[0]
           }
         }

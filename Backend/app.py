@@ -28,8 +28,11 @@ CORS(app)
 # Checks request is valid JSON
 @is_json
 def register():
-    username, password, firstname, lastname, email = request.json.get('userName', None), request.json.get(
-        'password', None), request.json.get('firstName', None), request.json.get('lastName', None), request.json.get('email', None)
+    username = request.json.get('username', None)
+    password = request.json.get('password', None)
+    firstname = request.json.get('firstname', None)
+    lastname = request.json.get('lastname', None)
+    email = request.json.get('email', None)
 
     # Checks for null fields
     if not username or not password or not firstname or not lastname or not email:
@@ -40,11 +43,11 @@ def register():
         return resp(code=400, msg="Malformed register request!")
 
     # Checks if a user already exists with the provided username or email
-    if queryDB(query="select * from accounts where username=%s or email=%s;", oneRow=True, queryTerms=(username, username)):
+    if queryDB(query="select * from users where username=%s or email=%s;", oneRow=True, queryTerms=(username, email)):
         return resp(code=400, msg="Username or email in use!")
 
     # Generates a unique userID
-    userID = uuid.uuid4()
+    userID = str(uuid.uuid4())
 
     # Hashes the users password.
     passwordHash = hashPw(password)
@@ -293,4 +296,4 @@ def updateAccountData():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, listen='192.168.0.1')
+    app.run(debug=True)
