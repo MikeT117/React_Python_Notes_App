@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import ReactQuill from "react-quill";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import genTimeStamp from "../functions";
 
 const Wrapper = styled.div`
@@ -102,19 +102,21 @@ const Title = styled.input`
   }
 `;
 
-export default ({ note, close }) => {
-  const [title, setTitle] = useState(note.title);
-  const [body, setBody] = useState(note.body);
+export default () => {
+  const editor = useSelector(state => state.rootReducer.notes.editor);
+  const [title, setTitle] = useState(editor.note.title);
+  const [body, setBody] = useState(editor.note.body);
+
   const dispatch = useDispatch();
   const timestamp = genTimeStamp();
 
-  const handleSave = () => {
+  const save = () => {
     dispatch(
-      note.newNote
+      editor.note.newNote
         ? {
             type: "ADD_NOTE",
             payload: {
-              ...note,
+              ...editor.note,
               title: title,
               body: body,
               timeStampModified: timestamp,
@@ -124,21 +126,23 @@ export default ({ note, close }) => {
         : {
             type: "UPDATE_NOTE",
             payload: {
-              ...note,
+              ...editor.note,
               title: title,
               body: body,
               timeStampModified: timestamp
             }
           }
     );
-    close();
+    dispatch({ type: "CLOSE_EDITOR" });
   };
 
   return (
     <Wrapper>
       <Overlay
         onClick={() => {
-          window.confirm("Are you sure?") === true ? close() : void 0;
+          window.confirm("Are you sure?") === true
+            ? dispatch({ type: "CLOSE_EDITOR" })
+            : void 0;
         }}
       />
       <Editor>
@@ -153,7 +157,7 @@ export default ({ note, close }) => {
           onChange={e => setBody(e)}
         />
         <ButtonWrapper>
-          <Button onClick={handleSave}>Save</Button>
+          <Button onClick={save}>Save</Button>
         </ButtonWrapper>
       </Editor>
     </Wrapper>

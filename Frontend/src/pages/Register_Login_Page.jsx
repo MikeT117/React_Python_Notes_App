@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { useDispatch } from "react-redux";
-import { login } from "../api";
+import { login } from "../redux/actions";
 import Header from "../components/Header";
 
 const Wrapper = styled.div`
@@ -114,11 +114,14 @@ const Button = styled.button`
 
 const P = styled.p`
   font-family: "Open Sans", sans-serif;
-  font-weight: 600;
+  font-weight: 400;
   color: rgba(0, 0, 0, 0.8);
   font-size: 1em;
   & > a {
     text-decoration: none;
+  }
+  @media (max-width: 576px) {
+    font-size: .85em;
   }
 `;
 

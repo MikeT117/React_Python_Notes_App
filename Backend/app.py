@@ -69,7 +69,7 @@ def getToken():
         return resp(code=400, msg="Username/Email or Password not provided!")
 
     # Retrieves the user from the DB if the user exists
-    userFromDB = queryDB(query="select id, username, avatar, password from users where username=%s or email=%s;",
+    userFromDB = queryDB(query="select id, username, avatar, syncInterval, password from users where username=%s or email=%s;",
                          oneRow=True, queryTerms=(username_email, username_email))
     # Checks user is not null/none
     if userFromDB:
@@ -90,7 +90,7 @@ def getToken():
             if data != False:
 
                 # Returns an access and refresh token along with the users username and avatar
-                return resp(data={"access_token": access_token, "refresh_token": refresh_token, "userId": userFromDB["id"], "username": userFromDB['username'], "avatar": f"http://localhost:5000/static/profileImages/{userFromDB['avatar']}"}, msg="token request successful")
+                return resp(data={"access_token": access_token, "refresh_token": refresh_token, "userId": userFromDB["id"], "username": userFromDB['username'], "syncInterval": userFromDB['syncInterval'], "avatar": f"http://localhost:5000/static/profileImages/{userFromDB['avatar']}"}, msg="token request successful")
 
             # If there was an issue storing the latest tokens and timestamps the login will fail and return a failur message
             return resp(code=400, msg="Issue logging in, Please try again.")
@@ -202,7 +202,7 @@ def deleteNote():
     return resp(code=400, msg="Error while deleting note, Please try again later.")
 
 
-@app.route('updateAccount', methods=['POST'])
+@app.route('/updateAccount', methods=['POST'])
 # Checks for a valid refresh token
 @jwt_refresh_token_required
 # Checks request is valid JSON
@@ -242,7 +242,7 @@ def updateAccount():
     return resp(code=400, msg="Error, Empty account data.")
 
 
-@app.route('updatePassword', methods=['POST'])
+@app.route('/updatePassword', methods=['POST'])
 # Checks for a valid refresh token
 @jwt_refresh_token_required
 # Checks request is valid JSON
@@ -293,4 +293,4 @@ def updateAccountData():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, listen='192.168.0.1')

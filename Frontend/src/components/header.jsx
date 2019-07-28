@@ -85,6 +85,7 @@ const AddButton = styled(ButtonWrapper)`
     background-color: #04cef4;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
     color: rgb(247, 247, 247);
+    border: 1px solid rgba(0,0,0,0.0)
   }
   &:hover {
     cursor: pointer;
@@ -92,17 +93,17 @@ const AddButton = styled(ButtonWrapper)`
 `;
 
 export default ({
-  newNote,
+  addNewNote,
   add,
   search,
   dark,
   bgColor,
   avatarPadding,
-  initiateSync
+  sync
 }) => {
   const [searchOpen, setSearch] = useState(false);
   const [drawerState, setDrawer] = useState(false);
-  const sync = useSelector(state => state.rootReducer.notes.synced);
+  const syncStatus = useSelector(state => state.rootReducer.notes.synced);
   const dispatch = useDispatch();
   return (
     <Wrapper bgColor={bgColor}>
@@ -129,12 +130,16 @@ export default ({
       )}
       {!searchOpen && <Spacer />}
       {add && (
-        <AddButton className="addButton" onClick={newNote} dark={dark}>
+        <AddButton className="addButton" onClick={addNewNote} dark={dark}>
           <IoMdAdd size="1.5em" />
         </AddButton>
       )}
-      <ButtonWrapper dark={dark} onClick={() => !sync && initiateSync()}>
-        {sync ? <IoMdCheckmark size="1.5em" /> : <IoMdRefresh size="1.5em" />}
+      <ButtonWrapper dark={dark} onClick={() => !syncStatus && sync}>
+        {syncStatus ? (
+          <IoMdCheckmark size="1.5em" />
+        ) : (
+          <IoMdRefresh size="1.5em" />
+        )}
       </ButtonWrapper>
       <Avatar
         padding={avatarPadding}

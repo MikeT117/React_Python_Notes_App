@@ -6,11 +6,15 @@ const initialState = {
     filtered: [],
     unsynced: [],
     deleted: [],
+    editor: {
+      open: false,
+      note: null
+    },
     synced: true,
-    syncInterval: 60
   },
   user: {
-    isLoggedIn: false
+    isLoggedIn: false,
+    syncInterval: 5
   }
 };
 
@@ -19,9 +23,14 @@ const rootReducer = (state = initialState, action) => {
     case "ADD_NOTE":
     case "DELETE_NOTE":
     case "UPDATE_NOTE":
-    case "RETRIEVE_NOTES":
+    case "LOAD_NOTES":
     case "FILTER_NOTES":
     case "SYNC_WITH_BACKEND":
+    case "EDITOR_LOAD_NEW":
+    case "EDITOR_LOAD_EXISTING":
+    case "SYNC_DELETE":
+    case "SYNC_ADD_UPDATE":
+    case "CLOSE_EDITOR":
       return Object.assign({}, state, {
         notes: notesReducer(state.notes, action)
       });
@@ -67,6 +76,24 @@ const notesReducer = (state = initialState.notes, action) => {
         filtered: []
       };
 
+    case "EDITOR_LOAD_EXISTING":
+      return {
+        ...state,
+        editor: {
+          ...state.editor,
+          open: true,
+          note: {
+            ...state.all.filter(d => {
+              if (d.id === action.payload) return d;
+            })[0]
+          }
+        }
+      };
+
+    case "EDITOR_LOAD_NEW":
+      return { ...state, editor: { open: true, note: action.payload } };
+    case "CLOSE_EDITOR":
+      return { ...state, editor: { open: false, note: null } };
     case "FILTER_NOTES":
       return {
         ...state,
@@ -79,14 +106,14 @@ const notesReducer = (state = initialState.notes, action) => {
           return null;
         })
       };
-    case "RETRIEVE_NOTES":
+    case "LOAD_NOTES":
       return { ...state, all: action.payload };
-    case "SYNC_WITH_BACKEND_ADD_UPDATE":
+    case "SYNC_ADD_UPDATE":
       return {
         ...state,
         unsynced: state.unsynced.filter(d => d.id !== action.payload)
       };
-    case "SYNC_WITH_BACKEND_DELETE":
+    case "SYNC_DELETE":
       return {
         ...state,
         deleted: state.deleted.filter(d => d.id !== action.payload)
@@ -117,7 +144,5 @@ const userReducer = (state = initialState.user, action) => {
 };
 
 export default combineReducers({
-  rootReducer,
-  notesReducer,
-  userReducer
+  rootReducer
 });

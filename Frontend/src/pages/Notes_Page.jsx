@@ -4,8 +4,8 @@ import styled from "styled-components";
 import Note from "../components/Note";
 import Header from "../components/Header";
 import Editor from "../components/Editor";
-import { getAllNotes } from "../api";
-import { syncToBackend } from "../api";
+import { getAllNotes } from "../redux/actions";
+import { editorLoadNewNote } from "../redux/actions";
 
 const Wrapper = styled.div`
   display: flex;
@@ -20,55 +20,32 @@ const Wrapper = styled.div`
   }
 `;
 
-export default data => {
+export default (data, sync) => {
   const { userId, refresh_token } = data;
-
   const allNotes = useSelector(state => state.rootReducer.notes.all);
   const filteredNotes = useSelector(state => state.rootReducer.notes.filtered);
-  const unsyncedNotes = useSelector(state => state.rootReducer.notes.unsynced);
-  const deletedNotes = useSelector(state => state.rootReducer.notes.deleted);
-  const [editor, setEditor] = useState({ open: false, note: null });
+  const editorOpen = useSelector(state => state.rootReducer.notes.editor.open);
   const dispatch = useDispatch();
-  const initiateSync = () => {
-    unsyncedNotes.length > 0 &&
-      unsyncedNotes.map(d => dispatch(syncToBackend(refresh_token, d)));
-    deletedNotes.length > 0 &&
-      deletedNotes.map(d =>
-        dispatch(
-          syncToBackend(
-            refresh_token,
-            d,
-            "deleteNote",
-            "SYNC_WITH_BACKEND_DELETE"
-          )
-        )
-      );
-    // dispatch({ type: "SYNC_COMPLETED_SUCCESSFULY" });
+
+  const getNextId = () => {
+    const highestId = Math.max.apply(Math, allNotes.map(d => d.id)) + 1;
+    console.log(highestId === null, highestId);
+    if (Number.isInteger(highestId)) return highestId;
+    return 1;
   };
 
   useEffect(() => {
     dispatch(getAllNotes(refresh_token));
   }, [dispatch]);
+
   return (
     <>
       <Header
+        sync={sync}
         add
         search
         setSearch={e => dispatch({ type: "FILTER_NOTES", payload: e })}
-        initiateSync={initiateSync}
-        newNote={() =>
-          setEditor({
-            ...editor,
-            open: true,
-            note: {
-              title: "",
-              body: "",
-              newNote: true,
-              user: userId,
-              id: Math.max.apply(Math, allNotes.map(d => d.id)) + 1
-            }
-          })
-        }
+        addNewNote={() => dispatch(editorLoadNewNote(userId, getNextId()))}
       />
 
       <Wrapper>
@@ -80,11 +57,7 @@ export default data => {
               title={d.title}
               body={d.body}
               onClick={() =>
-                setEditor({
-                  ...editor,
-                  open: true,
-                  note: { ...d, newNote: false }
-                })
+                dispatch({ type: "EDITOR_LOAD_EXISTING", payload: d.id })
               }
             />
           ))}
@@ -95,21 +68,12 @@ export default data => {
               title={d.title}
               body={d.body}
               onClick={() =>
-                setEditor({
-                  ...editor,
-                  open: true,
-                  note: { ...d, newNote: false }
-                })
+                dispatch({ type: "EDITOR_LOAD_EXISTING", payload: d.id })
               }
             />
           ))}
       </Wrapper>
-      {editor.open && (
-        <Editor
-          {...editor}
-          close={() => setEditor({ ...editor, open: false })}
-        />
-      )}
+      {editorOpen && <Editor />}
     </>
   );
 };

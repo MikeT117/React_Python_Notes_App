@@ -4,6 +4,7 @@ import vegetaBlue from "../assets/images/VegetaBlue.jpg";
 
 const Wrapper = styled.div`
   min-width: ${props => props.size || "42px"};
+  max-width: 42px;
   height: ${props => props.size || "42px"};
   border-radius: 50%;
   padding: ${props => props.padding || "2px"};

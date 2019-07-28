@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { useSelector, useDispatch } from "react-redux";
 import Avatar from "../components/Avatar";
 import Header from "../components/Header";
-import { retrieveAccountData } from "../api";
+import { retrieveAccountData } from "../redux/actions";;
 
 const ContentWrapper = styled.div`
   display: flex;
@@ -78,15 +78,16 @@ const Wrapper = styled.div`
   background-image: linear-gradient(#04cef4,#f7f7f7,#f7f7f7);
 `;
 
-export default data => {
-  const accData = useSelector(state => state.userReducer.info);
+export default (data, sync) => {
+  const accData = useSelector(state => state.rootReducer.user.info);
   const dispatch = useDispatch();
+  
   useEffect(() => {
     dispatch(retrieveAccountData(data.refresh_token));
   }, [dispatch]);
   return (
     <Wrapper>
-      <Header avatarPadding="none" bgColor="transparent" dark={true} />
+      <Header avatarPadding="none" bgColor="transparent" dark={true} sync={sync} />
       {accData && (
         <ContentWrapper>
           <AvatarBackground>

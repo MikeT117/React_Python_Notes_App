@@ -14,7 +14,7 @@ export const getAllNotes = creds => {
       );
       if (resp.status === 200) {
         const json = await resp.json();
-        dispatch({ type: "RETRIEVE_NOTES", payload: json });
+        dispatch({ type: "LOAD_NOTES", payload: json });
       }
     } catch (e) {
       console.log("Error getting notes!", e);
@@ -68,12 +68,7 @@ export const login = userDetails => {
   };
 };
 
-export const syncToBackend = (
-  creds,
-  data,
-  endpoint = "saveUpdateNote",
-  type = "SYNC_WITH_BACKEND_ADD_UPDATE"
-) => {
+export const syncToBackend = (creds, data, endpoint, type) => {
   // dispatch an event to notify the user that syncing has begun
   return async dispatch => {
     try {
@@ -98,5 +93,20 @@ export const syncToBackend = (
     } catch (e) {
       console.log("Issue during sync, Please try again later!", e);
     }
+  };
+};
+
+export const editorLoadNewNote = (userId, id) => {
+  const data = {
+    id: id,
+    body: "",
+    timeStampEntered: null,
+    timeStampModified: null,
+    title: "",
+    user: userId,
+    newNote: true
+  };
+  return async dispatch => {
+    dispatch({ type: "EDITOR_LOAD_NEW", payload: data });
   };
 };

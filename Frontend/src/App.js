@@ -33,9 +33,9 @@ const StyledRouter = styled(Router)`
   flex-direction: column;
 `;
 
-const HomePage = data =>
+const HomePage = (data, sync) =>
   data.isLoggedIn ? <Notes {...data} /> : <Redirect to="/login" noThrow />;
-const AccountPage = data =>
+const AccountPage = (data, sync) =>
   data.isLoggedIn ? (
     <Account refresh_token={data.refresh_token} />
   ) : (
@@ -49,12 +49,12 @@ const RegisterPage = data =>
 
 export default () => {
   const user = useSelector(state => state.rootReducer.user);
-  useSyncPolling();
+  const [sync] = useSyncPolling();
   return (
     <>
       <GlobalStyle />
       <StyledRouter>
-        <HomePage {...user} path="/" />
+        <HomePage {...user} sync={sync} path="/" />
         <AccountPage {...user} path="/account" />
         <LoginPage {...user} path="login" />
         <RegisterPage {...user} path="/register" />

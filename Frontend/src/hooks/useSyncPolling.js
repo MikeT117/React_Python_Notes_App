@@ -1,38 +1,31 @@
 import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { syncToBackend } from "../api/index";
+import { syncToBackend } from "../redux/actions";
+
+let deleteTimeout;
+let unsyncedTimeout;
 
 export default () => {
   const creds = useSelector(state => state.rootReducer.user.refresh_token);
   const unsynced = useSelector(state => state.rootReducer.notes.unsynced);
   const deleted = useSelector(state => state.rootReducer.notes.deleted);
   const syncInterval =
-    useSelector(state => state.rootReducer.user.syncInterval) * 1000;
+    useSelector(state => state.rootReducer.user.syncInterval) * 1000 || 2000;
 
   const dispatch = useDispatch();
 
-  let deleteTimeout;
-  let unsyncedTimeout;
-
   const unsyncedSync = () => {
-    unsynced.map(d =>
-      dispatch(
-        syncToBackend(
-          creds,
-          d,
-          "saveUpdateNote",
-          "SYNC_WITH_BACKEND_ADD_UPDATE"
-        )
-      )
-    );
+    unsynced.length > 0 &&
+      unsynced.map(d =>
+        dispatch(syncToBackend(creds, d, "saveUpdateNote", "SYNC_ADD_UPDATE"))
+      );
   };
 
   const deletedSync = () => {
-    deleted.map(d =>
-      dispatch(
-        syncToBackend(creds, d, "deleteNote", "SYNC_WITH_BACKEND_DELETE")
-      )
-    );
+    deleted.length > 0 &&
+      deleted.map(d =>
+        dispatch(syncToBackend(creds, d, "deleteNote", "SYNC_DELETE"))
+      );
   };
 
   const unsyncedInitiator = () => {
@@ -49,13 +42,17 @@ export default () => {
     }, syncInterval);
   };
 
+  const sync = () => {
+    unsyncedSync();
+    deletedSync();
+  };
+
   useEffect(() => {
-    if (unsynced.length > 0) unsyncedSync();
-    if (deleted.length > 0) deletedSync();
+    sync();
   }, []);
 
   useEffect(() => unsyncedInitiator(), [unsynced]);
   useEffect(() => deletedInitiator(), [deleted]);
 
-  return [setSyncInterval];
+  return [sync];
 };
