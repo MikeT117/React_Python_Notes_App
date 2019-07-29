@@ -4,7 +4,8 @@ import { useSelector, useDispatch } from "react-redux";
 import Avatar from "../components/Avatar";
 import Header from "../components/Header";
 import { retrieveAccountData } from "../redux/actions";
-
+import ImageUpload from "../components/ImageUpload";
+import { IoMdCamera } from "react-icons/io";
 const ContentWrapper = styled.div`
   display: flex;
   flex-direction: column;
@@ -15,7 +16,6 @@ const AvatarBackground = styled.div`
   flex-direction: column;
   justify-content: center;
   align-items: center;
-
   flex-grow: 1;
   padding: 32px;
 `;
@@ -77,9 +77,47 @@ const Wrapper = styled.div`
   flex-direction: column;
   background-image: linear-gradient(#04cef4, #f7f7f7, #f7f7f7);
 `;
+const UploadAvatarButton = styled(IoMdCamera)`
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  min-width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+  padding: 4.25em;
+  color: rgba(277, 277, 277, 1);
+`;
+
+const Label = styled.label`
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  & > input {
+    width: 0;
+  }
+`;
+
+const StyledAvatar = styled(Avatar)`
+  & > svg {
+    display: none;
+  }
+  & > label {
+    display: none;
+  }
+  &:hover {
+    & > svg {
+      display: unset;
+    }
+    & > label {
+      display: unset;
+    }
+  }
+`;
 
 export default (data, sync) => {
-  const accData = useSelector(state => state.rootReducer.user.info);
+  const accData = useSelector(state => state.rootReducer.user);
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -96,7 +134,12 @@ export default (data, sync) => {
       {accData && (
         <ContentWrapper>
           <AvatarBackground>
-            <Avatar size={"182px"} padding="4px" ringColor="#f7f7f7" />
+            <StyledAvatar size={"182px"} padding="4px" ringColor="#f7f7f7">
+              <UploadAvatarButton />
+              <Label>
+                <ImageUpload />
+              </Label>
+            </StyledAvatar>
             <UserFull>{accData.username}</UserFull>
           </AvatarBackground>
 

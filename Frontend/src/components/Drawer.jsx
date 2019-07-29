@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { motion } from "framer-motion";
 import { IoMdArrowBack } from "react-icons/io";
 import { navigate } from "@reach/router";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 const Wrapper = styled(motion.div)`
   display: flex;
   position: fixed;
@@ -77,6 +77,7 @@ const Span = styled.span`
 `;
 export default ({ open, close }) => {
   const userName = useSelector(state => state.rootReducer.user.username);
+  const dispatch = useDispatch();
   return (
     <>
       {open && <Overlay onClick={close} />}
@@ -91,11 +92,10 @@ export default ({ open, close }) => {
             <Span>{userName}</Span>
           </ButtonWrapper>
         </DrawerHeader>
-
         <UL>
           <li onClick={() => navigate("/")}>Home</li>
           <li onClick={() => navigate("/account")}>Account</li>
-          <li>Sync Interval</li>
+          <li onClick={() => dispatch({ type: "LOGOUT" })}>Logout</li>
         </UL>
       </Wrapper>
     </>

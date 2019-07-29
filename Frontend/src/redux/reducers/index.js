@@ -11,6 +11,7 @@ const initialState = {
       note: null
     },
     synced: true,
+    syncFailure: false
   },
   user: {
     isLoggedIn: false,
@@ -35,12 +36,15 @@ const rootReducer = (state = initialState, action) => {
         notes: notesReducer(state.notes, action)
       });
     case "LOGIN":
-    case "LOGOUT":
     case "RETRIEVE_ACCOUNT_DATA":
     case "MODIFY_SYNC_INTERVAL":
+    case "UPDATE_AVATAR":
       return Object.assign({}, state, {
         user: userReducer(state.user, action)
       });
+
+    case "LOGOUT":
+      return { ...initialState };
     default:
       return state;
   }
@@ -57,9 +61,18 @@ const notesReducer = (state = initialState.notes, action) => {
       };
 
     case "DELETE_NOTE":
+      console.log(action.payload);
+      if (state.unsynced.filter(d => d.id === action.payload.id).length > 0) {
+        return {
+          ...state,
+          all: state.all.filter(d => d.id !== action.payload.id),
+          unsynced: state.unsynced.filter(d => d.id !== action.payload.id),
+          synced: false
+        };
+      }
       return {
         ...state,
-        all: state.all.filter(d => d.id !== action.payload),
+        all: state.all.filter(d => d.id !== action.payload.id),
         deleted: [...state.deleted, action.payload],
         synced: false
       };
@@ -71,7 +84,14 @@ const notesReducer = (state = initialState.notes, action) => {
           if (d.id === action.payload.id) return { ...action.payload };
           return d;
         }),
-        unsynced: [...state.unsynced, { ...action.payload }],
+        unsynced:
+          state.unsynced.length > 0
+            ? state.unsynced.map(d => {
+                if (d.id === action.payload.id)
+                  return { ...d, ...action.payload };
+                return d;
+              })
+            : [...state.unsynced, action.payload],
         synced: false,
         filtered: []
       };
@@ -84,9 +104,11 @@ const notesReducer = (state = initialState.notes, action) => {
           open: true,
           note: {
             ...state.all.filter(d => {
+              console.log(d);
               if (d.id === action.payload) return d;
-              return null
-            })[0]
+              return null;
+            })[0],
+            newNote: false
           }
         }
       };
@@ -109,6 +131,8 @@ const notesReducer = (state = initialState.notes, action) => {
       };
     case "LOAD_NOTES":
       return { ...state, all: action.payload };
+    case "SYNC_BEGIN":
+      return { ...state };
     case "SYNC_ADD_UPDATE":
       return {
         ...state,
@@ -122,7 +146,13 @@ const notesReducer = (state = initialState.notes, action) => {
     case "SYNC_COMPLETED_SUCCESSFULY":
       return {
         ...state,
-        synced: true
+        synced: true,
+        syncFailure: false
+      };
+    case "SYNC_FAILURE":
+      return {
+        ...state,
+        syncFailure: false
       };
     default:
       return state;
@@ -133,10 +163,10 @@ const userReducer = (state = initialState.user, action) => {
   switch (action.type) {
     case "LOGIN":
       return { ...state, isLoggedIn: true, ...action.payload };
-    case "LOGOUT":
-      return { isLoggedIn: false, info: {} };
     case "RETRIEVE_ACCOUNT_DATA":
-      return { ...state, info: action.payload };
+      return { ...state, ...action.payload };
+    case "UPDATE_AVATAR":
+      return { ...state, avatar: action.payload };
     case "MODIFY_SYNC_INTERVAL":
       return { ...state, syncInterval: action.payload };
     default:

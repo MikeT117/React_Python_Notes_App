@@ -27,9 +27,8 @@ export default (data, sync) => {
   const editorOpen = useSelector(state => state.rootReducer.notes.editor.open);
   const dispatch = useDispatch();
 
-  const getNextId = () => {
+  const genTempId = () => {
     const highestId = Math.max.apply(Math, allNotes.map(d => d.id)) + 1;
-    console.log(highestId === null, highestId);
     if (Number.isInteger(highestId)) return highestId;
     return 1;
   };
@@ -45,7 +44,7 @@ export default (data, sync) => {
         add
         search
         setSearch={e => dispatch({ type: "FILTER_NOTES", payload: e })}
-        addNewNote={() => dispatch(editorLoadNewNote(userId, getNextId()))}
+        addNewNote={() => dispatch(editorLoadNewNote(userId, genTempId()))}
       />
 
       <Wrapper>

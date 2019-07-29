@@ -8,15 +8,15 @@ import binascii
 
 # Function to query DB
 def queryDB(oneRow=False, allRows=False, modify=False, query=None, queryTerms=None):
-    conn = pymysql.connect(host='sql.internal.razor116.com', user='michael',
-                           passwd='sqlpassword', db='noteapp', cursorclass=pymysql.cursors.DictCursor)
+    conn = pymysql.connect(host='', user='',
+                           passwd='', db='', cursorclass=pymysql.cursors.DictCursor)
     if queryTerms == None or query == None:
         return False
     try:
         with conn.cursor() as cursor:
             cursor.execute(query, queryTerms)
             # Debugging #
-            print(cursor._last_executed)
+            # print(cursor._last_executed) #
             # Debugging #
             if allRows:
                 return cursor.fetchall()

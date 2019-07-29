@@ -12,12 +12,13 @@ from app_config import secret_key
 import eventlet
 
 eventlet.monkey_patch()
-UPLOAD_FOLDER = 'F:\Projects\Projects\CS50\cs50_project_2019\Backend\static\profileImages'
+UPLOAD_FOLDER = "YOUR UPLOAD FOLDER HERE"
 ALLOWED_EXTENSION = set(['jpg', 'jpeg', 'png', 'gif'])
 
 app = Flask(__name__, static_folder='static')
 app.config['JWT_SECRET_KEY'] = secret_key
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = datetime.timedelta(days=1)
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = 86400
+app.config['JWT_REFRESH_TOKEN_EXPIRES'] = 604800
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['CORS_HEADERS'] = 'Content-Type'
 jwt = JWTManager(app)
@@ -53,7 +54,7 @@ def register():
     passwordHash = hashPw(password)
 
     # Inserts new users details into the DB.
-    if queryDB(modify=True, query="insert into users (id,username,firstname,lastname,email,password, timeStampRegistration) VALUES (%s,%s,%s,%s,%s,%s, CURRENT_TIMESTAMP());", queryTerms=(userID, username, firstname, lastname, email, passwordHash)) != True:
+    if queryDB(modify=True, query="insert into users (id,username,firstname,lastname,email,password, timeStampRegistration, syncInterval) VALUES (%s,%s,%s,%s,%s,%s, CURRENT_TIMESTAMP(), %s);", queryTerms=(userID, username, firstname, lastname, email, passwordHash, 5)) != True:
         return resp(code=400, msg="Issue during registration! Please try again later.")
 
     # Returns a success message to the frontend
@@ -111,8 +112,8 @@ def retrieveAccountData():
     currentUser = get_jwt_identity()
 
     # Retrieve user info from DB
-    accountInfo = queryDB(query="select * from users where username=%s;",
-                          oneRow=True, queryTerms=(currentUser, ))
+    accountInfo = queryDB(query="select email, firstname, lastname, timeStampLastLogin, timeStampRegistration from users where username=%s;",
+                          oneRow=True, queryTerms=(currentUser))
 
     # Checks account info is not null/none suggesting a failure to retrieve from the DB
     if accountInfo != False:
@@ -160,7 +161,6 @@ def saveUpdateNote():
 
     # Gets noteID if provided
     newNote = request.json.get('newNote', None)
-
     # Gets the note data from the request
     noteId = request.json.get('id', None)
     body = request.json.get('body', None)
@@ -171,7 +171,7 @@ def saveUpdateNote():
 
     # Checks newNote value to determine if this is an existing note and therefore an update is necessary, otherwise it's a new note.
     if newNote:
-        if queryDB(modify=True, query="insert into notes (id, title, body, timeStampEntered, timeStampModified, user) values (%s, %s, %s, %s, %s, %s);", queryTerms=(noteId, title, body, timeStampEntered, timeStampModified, userId)) != False:
+        if queryDB(modify=True, query="insert into notes (title, body, timeStampEntered, timeStampModified, user) values (%s, %s, %s, %s, %s);", queryTerms=(title, body, timeStampEntered, timeStampModified, userId)) != False:
             return resp(msg="Note saved.")
 
     # Updates an existing note with the values provided
@@ -196,10 +196,11 @@ def deleteNote():
     noteId = request.json.get('id', None)
 
     # Checks noteId is not null/none then proceeds to delete the requested note
-    if noteId and queryDB(modify=True, query="delete from notes where id=%s and user=(select id from users where username=%s);", queryTerms=(noteId, current_user)) != False:
+    if noteId:
+        if queryDB(modify=True, query="delete from notes where id=%s and user=(select id from users where username=%s);", queryTerms=(noteId, current_user)) != False:
 
-        # Upon successful deletion a response will be resturned to the frontend stating such
-        return resp(msg="Note successfully deleted!")
+            # Upon successful deletion a response will be resturned to the frontend stating such
+            return resp(msg="Note successfully deleted!")
 
     # If noteId is null/none or the DB query fails an error message will be returned to the frontend
     return resp(code=400, msg="Error while deleting note, Please try again later.")
@@ -277,22 +278,49 @@ def updatePassword():
     return resp(msg="Password cannot be empty, How did you even get here, My frontend validations must be sleeping O_o")
 
 
-# @app.route('/updateAccountData', methods=['POST'])
 @app.route('/updateAvatar', methods=['POST'])
-@jwt_required
+# Checks for a valid refresh token
+@jwt_refresh_token_required
 def updateAccountData():
-    curr_user = get_jwt_identity()
+
+    # Gets user's identity (username)
+    current_user = get_jwt_identity()
+
+    # Checks the request contains a file
     if 'file' in request.files:
+
+        # Assigns the file to a variable
         file = request.files['file']
+
+        # Checks file is not null/None and that the file is using an allowed file extension
         if file and allowedFile(file.filename):
-            filename = secure_filename(file.filename)
+
+            # Checks and returns a secure filename and appends the current user to the name
+            # to make it somewhat unique (UUID would be better here)
+            filename = secure_filename(file.filename) + f"_{current_user}"
+
+            # Saves the file in the set env variable UPLOAD FOLDER path
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            data = DBQuery(modify=f"update accounts set avatar='{filename}' where username='{curr_user}'",
-                           select=f"select avatar from accounts where username='{curr_user}'", oneRow=True)
+
+            # Save the filename to the DB
+            data = queryDB(modify=True, query="update users set avatar=%s where username=%s", queryTerms=(
+                filename, current_user))
+
+            # Checks the data was successfully pushed to the DB
             if data != False:
-                return resp(data={"avatar": f"http://localhost:5000/static/profileImages/{data['avatar']}"}, msg="avatar added/updated")
+
+                # Returns the updated filename to the frontend along with the full url to access it
+                return resp(data={"avatar": f"http://localhost:5000/static/profileImages/{filename}"}, msg="avatar added/updated")
             else:
+
+                # Returns an error if the query was unsuccessful
                 return resp(code=500, msg="error adding/updating avatar")
+
+        # Returns an error if the file extension is not in the list of allowed extensions
+        return resp(code=500, msg="File ext not allowed")
+
+    # Returns an error if the request does not contain a file
+    return resp(code=500, msg="File not in request")
 
 
 if __name__ == '__main__':

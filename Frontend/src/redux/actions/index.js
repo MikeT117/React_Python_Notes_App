@@ -92,6 +92,7 @@ export const syncToBackend = (creds, data, endpoint, type) => {
       // dispatch an event to notify the user that syncing has failed
     } catch (e) {
       console.log("Issue during sync, Please try again later!", e);
+      dispatch({ type: "SYNC_FAILURE" });
     }
   };
 };
@@ -131,4 +132,31 @@ export const register = async data => {
     console.log("Error while resgistering, PLease try again later.", e);
     return false;
   }
+};
+
+export const updateAvatar = (data, creds) => {
+  return async dispatch => {
+    const formData = new FormData();
+    formData.append("file", data);
+
+    try {
+      const resp = await fetch(
+        `http://${window.location.hostname}:5000/updateAvatar`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${creds}`
+          },
+          body: formData
+        }
+      );
+      if (resp.status === 200) {
+        const json = await resp.json();
+        dispatch({ type: "UPDATE_AVATAR", payload: json.avatar });
+        return;
+      }
+    } catch (e) {
+      console.log("Error uploading avatar image, please try again later", e);
+    }
+  };
 };

@@ -1,29 +1,33 @@
 import React from "react";
 import styled from "styled-components";
-import vegetaBlue from "../assets/images/VegetaBlue.jpg";
+import { useSelector } from "react-redux";
+import defaultAvatar from "../assets/images/defaultAvatar.png";
 
 const Wrapper = styled.div`
+  position: relative;
+  display: flex;
+  justify-content: center;
   min-width: ${props => props.size || "42px"};
   max-width: 42px;
   height: ${props => props.size || "42px"};
   border-radius: 50%;
-  padding: ${props => props.padding || "2px"};
   background: ${props => props.ringColor};
+  border: ${props => props.padding || "2px"} solid ${props => props.ringColor};
+  overflow: hidden;
   &:hover {
     cursor: pointer;
   }
 `;
 
-const Avatar = styled.img`
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-`;
-
-export default ({ ...props }) => {
+export default ({ children, ...props }) => {
+  const avatarImg = useSelector(state => state.rootReducer.user.avatar);
   return (
     <Wrapper {...props}>
-      <Avatar src={vegetaBlue} />
+      <img
+        src={avatarImg === "http://localhost:5000/static/profileImages/" ? defaultAvatar : avatarImg}
+        alt="Avatar"
+      />
+      {children}
     </Wrapper>
   );
 };

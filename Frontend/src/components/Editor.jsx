@@ -102,6 +102,11 @@ const Title = styled.input`
   }
 `;
 
+const ButtonContainer = styled.div`
+  display: flex;
+  justify-content: flex-end;
+`;
+
 export default () => {
   const editor = useSelector(state => state.rootReducer.notes.editor);
   const [title, setTitle] = useState(editor.note.title);
@@ -136,6 +141,11 @@ export default () => {
     dispatch({ type: "CLOSE_EDITOR" });
   };
 
+  const del = () => {
+    dispatch({ type: "DELETE_NOTE", payload: editor.note });
+    dispatch({ type: "CLOSE_EDITOR" });
+  };
+
   return (
     <Wrapper>
       <Overlay
@@ -156,9 +166,16 @@ export default () => {
           value={body}
           onChange={e => setBody(e)}
         />
-        <ButtonWrapper>
-          <Button onClick={save}>Save</Button>
-        </ButtonWrapper>
+        <ButtonContainer>
+          {!editor.note.newNote && (
+            <ButtonWrapper>
+              <Button onClick={del}>Delete</Button>
+            </ButtonWrapper>
+          )}
+          <ButtonWrapper>
+            <Button onClick={save}>Save</Button>
+          </ButtonWrapper>
+        </ButtonContainer>
       </Editor>
     </Wrapper>
   );

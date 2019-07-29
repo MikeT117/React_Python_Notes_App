@@ -85,7 +85,7 @@ const AddButton = styled(ButtonWrapper)`
     background-color: #04cef4;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
     color: rgb(247, 247, 247);
-    border: 1px solid rgba(0,0,0,0.0)
+    border: 1px solid rgba(0, 0, 0, 0);
   }
   &:hover {
     cursor: pointer;
