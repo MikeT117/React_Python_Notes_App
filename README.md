@@ -5,22 +5,20 @@ Simple notes app I created to learn, Add, edit delete notes. Useable offline but
 Written in Python using the Flask framework, Authentication is done via JWT.
 
 ### Frontend
-Written in JS using the React, Redux, React-Redux, Redux-Thunk, Styled-Components, Framer-Motion(Like just one thing, not needed), Reach-Router.
+Written in JS using the React, Redux, React-Redux, Redux-Thunk, Styled-Components, Framer-Motion(Like just one thing, not really needed), Reach-Router.
 
 Backend communicates with a SQL instance with the following schema:
 
-DB: noteapp
-  Tables:
-    notes:
-      Columns:
+DB: noteapp:{
+      notes:{
         id
         body
         timeStampEntered
         timeStampModified
         title
         user
-    users
-      Columns:
+      } 
+      users:{
         id
         email
         username
@@ -33,6 +31,8 @@ DB: noteapp
         refresh_token
         timeStampSessionStart
         password
+      }
+    }
 
 ### Configurables
 
